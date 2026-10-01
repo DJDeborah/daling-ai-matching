@@ -4,6 +4,7 @@ import { database } from "./database";
 const COOKIE = "daling_session";
 const SESSION_DAYS = 14;
 export const PASSWORD_ITERATIONS = 600_000;
+const MAX_STAGE_ITERATIONS = 100_000;
 
 export type SiteUser = { userId: string; username: string };
 
@@ -45,11 +46,26 @@ export async function sha256(value: string): Promise<string> {
 }
 
 async function derive(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
-  const ownedSalt = new Uint8Array(salt.length);
-  ownedSalt.set(salt);
-  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: ownedSalt, iterations }, key, 256);
-  return new Uint8Array(bits);
+  // The production Worker rejects a single PBKDF2 call above 100,000 iterations.
+  // Chain stages so each call stays within that limit and all 600,000 iterations
+  // remain necessary to verify a password.
+  let secret: Uint8Array = new TextEncoder().encode(password);
+  let remaining = iterations;
+  let stage = 0;
+  while (remaining > 0) {
+    const stageIterations = Math.min(remaining, MAX_STAGE_ITERATIONS);
+    const stageSalt = new Uint8Array(salt.length + 4);
+    stageSalt.set(salt);
+    new DataView(stageSalt.buffer).setUint32(salt.length, stage, false);
+    const rawSecret = new Uint8Array(secret.length);
+    rawSecret.set(secret);
+    const key = await crypto.subtle.importKey("raw", rawSecret, "PBKDF2", false, ["deriveBits"]);
+    const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: stageSalt, iterations: stageIterations }, key, 256);
+    secret = new Uint8Array(bits);
+    remaining -= stageIterations;
+    stage++;
+  }
+  return secret;
 }
 
 export async function hashPassword(password: string) {
