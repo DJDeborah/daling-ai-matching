@@ -45,7 +45,7 @@ export const profileSchema = z.object({
   if (new Set(value.interests.map(x => x.toLocaleLowerCase())).size !== value.interests.length) {
     ctx.addIssue({ code: "custom", path: ["interests"], message: "兴趣标签不能重复" });
   }
-  for (const field of ["about", "partnerNote", "school"] as const) {
+  for (const field of ["name", "city", "preferredCity", "about", "partnerNote", "school"] as const) {
     if (obviousContact.test(value[field])) ctx.addIssue({ code: "custom", path: [field], message: "公开文字中不要填写联系方式，请在最后一步单独填写" });
   }
   if (value.interests.some(text => obviousContact.test(text))) {

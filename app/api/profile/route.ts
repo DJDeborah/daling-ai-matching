@@ -44,13 +44,15 @@ export async function POST(request: Request) {
     const mutable = columns.slice(2).filter(c => c !== "adult_confirmed_at" && c !== "created_at");
     const sql = `INSERT INTO profiles (${columns.join(", ")}) VALUES (${columns.map(() => "?").join(", ")}) ON CONFLICT(user_id) DO UPDATE SET ${mutable.map(c => `${c} = excluded.${c}`).join(", ")}`;
     const write = db.prepare(sql).bind(...values);
+    const clearReport = db.prepare("DELETE FROM match_reports WHERE user_id = ?").bind(user.userId);
     if (!input.visible && current) {
       await db.batch([
         write,
         db.prepare("DELETE FROM likes WHERE from_profile_id = ? OR to_profile_id = ?").bind(current.profile_id, current.profile_id),
+        clearReport,
       ]);
     } else {
-      await write.run();
+      await db.batch([write, clearReport]);
     }
     return Response.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
@@ -72,6 +74,13 @@ export async function DELETE(request: Request) {
         db.prepare("DELETE FROM blocks WHERE from_profile_id = ? OR to_profile_id = ?").bind(current.profile_id, current.profile_id),
         db.prepare("DELETE FROM like_events WHERE from_profile_id = ?").bind(current.profile_id),
         db.prepare("DELETE FROM profiles WHERE profile_id = ?").bind(current.profile_id),
+        db.prepare("DELETE FROM conversations WHERE user_id = ?").bind(user.userId),
+        db.prepare("DELETE FROM match_reports WHERE user_id = ?").bind(user.userId),
+      ]);
+    } else {
+      await db.batch([
+        db.prepare("DELETE FROM conversations WHERE user_id = ?").bind(user.userId),
+        db.prepare("DELETE FROM match_reports WHERE user_id = ?").bind(user.userId),
       ]);
     }
     return Response.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });

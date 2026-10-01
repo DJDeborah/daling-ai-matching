@@ -205,7 +205,7 @@ export default function MatchingApp({ signedIn, displayName }: Props) {
   }
 
   return <div className="shell">
-    <header className="topbar"><a className="brand" href="/"><span className="brand-mark">✳</span>妲灵</a><span className="topbar-note">双向选择，认真认识</span><a className="topbar-link" href="/account">{signedIn ? "账号设置" : "注册 / 登录"}</a></header>
+    <header className="topbar"><a className="brand" href="/"><span className="brand-mark">✳</span>妲灵</a><span className="topbar-note">双向选择，认真认识</span><div className="chat-nav"><a href="/">返回对话与报告</a><a href="/account">账号设置</a></div></header>
     <div className="workspace">
       <aside className="story"><div><span className="eyebrow">Daling / Mutual Matching</span><h1>遇见<br />和你<em>双向</em><br />合拍的人。</h1><p className="story-copy">填写你的基本情况和期待。只有彼此条件符合，你们才会出现在对方的发现页。</p></div><div className="orbit" aria-hidden="true"><span className="orbit-ring"/><span className="orbit-ring"/><span className="orbit-core">✳</span><span className="orbit-dot"/><span className="orbit-dot two"/></div><div className="story-foot"><span>真实报名资料</span><span>双向偏好</span><span>自主删除</span></div></aside>
       <main className="content">

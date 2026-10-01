@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "妲灵 | 双向交友匹配",
-  description: "填写你的期待，发现双方条件都合适的人。资料由你决定是否加入匹配池。",
+  description: "先注册站内账号，再通过逐题 AI 对话认识彼此，核对资料并获取双向匹配报告。",
   icons: { icon: "/favicon.svg" },
 };
 

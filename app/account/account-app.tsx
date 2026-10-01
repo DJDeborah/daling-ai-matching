@@ -65,7 +65,7 @@ export default function AccountApp({ username }: { username: string | null }) {
   }
 
   return <div className="account-shell">
-    <header className="topbar"><a className="brand" href="/"><span className="brand-mark">✳</span>妲灵</a><span className="topbar-note">双向选择，认真认识</span><a className="topbar-link" href="/">返回匹配</a></header>
+    <header className="topbar"><a className="brand" href="/"><span className="brand-mark">✳</span>妲灵</a><span className="topbar-note">双向选择，认真认识</span>{username ? <a className="topbar-link" href="/">返回对话</a> : <span className="topbar-note">先创建账号，再开始对话</span>}</header>
     <main className="account-main">
       <p className="section-kicker">你的妲灵账号</p>
       <h1>{username ? `你好，${username}` : "注册或登录"}</h1>
@@ -85,9 +85,9 @@ export default function AccountApp({ username }: { username: string | null }) {
           <button className="primary-btn" type="submit" disabled={busy}>{busy ? "请稍候…" : mode === "register" ? "创建账号" : "登录"}</button>
         </form>
       </div> : <div className="account-sections">
-        <section className="card account-card"><h2>账号操作</h2><p className="muted small">你可以在这里退出登录。交友资料可在首页编辑或删除。</p><div className="candidate-actions"><a className="primary-btn" href="/">返回匹配</a><button className="secondary-btn" type="button" onClick={() => void logout()} disabled={busy}>退出登录</button></div></section>
+        <section className="card account-card"><h2>账号操作</h2><p className="muted small">你可以在这里退出登录。对话从首页继续，交友资料可在「我的资料与真实匹配」编辑或删除。</p><div className="candidate-actions"><a className="primary-btn" href="/">返回对话与报告</a><a className="secondary-btn" href="/profile">管理交友资料</a><button className="secondary-btn" type="button" onClick={() => void logout()} disabled={busy}>退出登录</button></div></section>
         <section className="card account-card"><h2>修改密码</h2><form onSubmit={changePassword}><div className="field"><label htmlFor="current-password">当前密码</label><input id="current-password" type="password" autoComplete="current-password" required value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} /></div><div className="field"><label htmlFor="new-password">新密码</label><input id="new-password" type="password" autoComplete="new-password" required minLength={15} maxLength={128} value={newPassword} onChange={e => setNewPassword(e.target.value)} /></div><button className="secondary-btn" type="submit" disabled={busy}>修改密码</button></form></section>
-        <section className="card account-card"><h2>永久删除账号</h2><p className="muted small">账号、资料、心动、屏蔽记录和登录会话都会删除，无法恢复。请输入密码确认。</p><form onSubmit={deleteAccount}><div className="field"><label htmlFor="delete-password">当前密码</label><input id="delete-password" type="password" autoComplete="current-password" required value={deletePassword} onChange={e => setDeletePassword(e.target.value)} /></div><button className="secondary-btn danger-btn" type="submit" disabled={busy}>永久删除账号与资料</button></form></section>
+        <section className="card account-card"><h2>永久删除账号</h2><p className="muted small">账号、对话、报告、资料、心动、屏蔽记录和登录会话都会删除，无法恢复。请输入密码确认。</p><form onSubmit={deleteAccount}><div className="field"><label htmlFor="delete-password">当前密码</label><input id="delete-password" type="password" autoComplete="current-password" required value={deletePassword} onChange={e => setDeletePassword(e.target.value)} /></div><button className="secondary-btn danger-btn" type="submit" disabled={busy}>永久删除账号与资料</button></form></section>
       </div>}
     </main>
   </div>;

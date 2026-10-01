@@ -32,6 +32,8 @@ export async function DELETE(request: Request) {
     ] : [];
     await db.batch([
       ...statements,
+      db.prepare("DELETE FROM conversations WHERE user_id = ?").bind(user.userId),
+      db.prepare("DELETE FROM match_reports WHERE user_id = ?").bind(user.userId),
       db.prepare("DELETE FROM ai_usage WHERE user_id = ?").bind(user.userId),
       db.prepare("DELETE FROM sessions WHERE user_id = ?").bind(user.userId),
       db.prepare("DELETE FROM users WHERE user_id = ?").bind(user.userId),

@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { getCurrentUser } from "@/lib/auth";
+import { releaseAiCall, reserveAiCall } from "@/lib/ai";
 import { database, jsonError, sameOrigin } from "@/lib/database";
 import { containsContact } from "@/lib/profile";
 import { z } from "zod";
@@ -29,15 +30,10 @@ export async function POST(request: Request) {
   if (containsContact(parsed.data.about)) return jsonError("请先移除联系方式再使用 AI 助手", 400);
 
   const db = database();
-  const eventId = crypto.randomUUID();
-  const now = new Date().toISOString();
-  const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+  let eventId: string | null = null;
   try {
-    await db.prepare("DELETE FROM ai_usage WHERE created_at < ?").bind(since).run();
-    const usage = await db.prepare(`INSERT INTO ai_usage (event_id, user_id, created_at)
-      SELECT ?, ?, ? WHERE (SELECT count(*) FROM ai_usage WHERE user_id = ? AND created_at >= ?) < 10`)
-      .bind(eventId, user.userId, now, user.userId, since).run();
-    if (!usage.meta.changes) return jsonError("今天的 AI 使用次数已用完，明天再试", 429);
+    eventId = await reserveAiCall(db, user.userId);
+    if (!eventId) return jsonError("今天的 AI 使用次数已用完，明天再试", 429);
     const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: { "Authorization": `Bearer ${env.DEEPSEEK_API_KEY}`, "Content-Type": "application/json" },
@@ -58,7 +54,7 @@ export async function POST(request: Request) {
     if (!suggested.success || containsContact(suggested.data.intro) || suggested.data.interests.some(containsContact)) throw new Error("invalid model output");
     return Response.json({ suggestion: suggested.data }, { headers: { "Cache-Control": "no-store" } });
   } catch {
-    await db.prepare("DELETE FROM ai_usage WHERE event_id = ?").bind(eventId).run().catch(() => {});
+    if (eventId) await releaseAiCall(db, eventId);
     console.error("AI suggestion failed");
     return jsonError("AI 助手暂时无法给出建议，请稍后重试", 502);
   }

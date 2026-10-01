@@ -1,14 +1,11 @@
+import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import MatchingApp from "./matching-app";
+import ChatApp from "./chat-app";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const user = await getCurrentUser();
-  return (
-    <MatchingApp
-      signedIn={Boolean(user)}
-      displayName={user?.username ?? null}
-    />
-  );
+  if (!user) redirect("/account");
+  return <ChatApp username={user.username} />;
 }

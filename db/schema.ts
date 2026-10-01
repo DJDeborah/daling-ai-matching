@@ -62,3 +62,21 @@ export const aiUsage = sqliteTable("ai_usage", {
   userId: text("user_id").notNull(),
   createdAt: text("created_at").notNull(),
 }, table => [index("ai_usage_user_created_idx").on(table.userId, table.createdAt)]);
+
+export const conversations = sqliteTable("conversations", {
+  userId: text("user_id").primaryKey(),
+  turn: integer("turn").notNull(),
+  step: integer("step").notNull(),
+  status: text("status").notNull(),
+  draftJson: text("draft_json").notNull(),
+  messagesJson: text("messages_json").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const matchReports = sqliteTable("match_reports", {
+  userId: text("user_id").primaryKey(),
+  profileUpdatedAt: text("profile_updated_at").notNull(),
+  demoVersion: integer("demo_version").notNull(),
+  reportJson: text("report_json").notNull(),
+  createdAt: text("created_at").notNull(),
+});
