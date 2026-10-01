@@ -34,3 +34,31 @@ export const likeEvents = sqliteTable("like_events", {
   fromProfileId: text("from_profile_id").notNull(),
   createdAt: text("created_at").notNull(),
 }, table => [index("like_events_from_created_idx").on(table.fromProfileId, table.createdAt)]);
+
+export const users = sqliteTable("users", {
+  userId: text("user_id").primaryKey(),
+  username: text("username").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  passwordSalt: text("password_salt").notNull(),
+  passwordIterations: integer("password_iterations").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+export const sessions = sqliteTable("sessions", {
+  tokenHash: text("token_hash").primaryKey(),
+  userId: text("user_id").notNull(),
+  createdAt: text("created_at").notNull(),
+  expiresAt: text("expires_at").notNull(),
+}, table => [index("sessions_user_idx").on(table.userId), index("sessions_expiry_idx").on(table.expiresAt)]);
+
+export const authRateLimits = sqliteTable("auth_rate_limits", {
+  bucket: text("bucket").primaryKey(),
+  hits: integer("hits").notNull(),
+  resetAt: text("reset_at").notNull(),
+});
+
+export const aiUsage = sqliteTable("ai_usage", {
+  eventId: text("event_id").primaryKey(),
+  userId: text("user_id").notNull(),
+  createdAt: text("created_at").notNull(),
+}, table => [index("ai_usage_user_created_idx").on(table.userId, table.createdAt)]);

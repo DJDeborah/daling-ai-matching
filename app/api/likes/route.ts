@@ -1,4 +1,4 @@
-import { getChatGPTUser } from "@/app/chatgpt-auth";
+import { getCurrentUser } from "@/lib/auth";
 import { byProfileId, database, jsonError, ownProfile, sameOrigin } from "@/lib/database";
 import { eligible } from "@/lib/matching";
 import { z } from "zod";
@@ -27,7 +27,7 @@ const insertIfStillEligible = `
     )`;
 
 async function context(request: Request) {
-  const user = await getChatGPTUser();
+  const user = await getCurrentUser(request);
   if (!user) return { error: jsonError("请先登录", 401) };
   if (!sameOrigin(request)) return { error: jsonError("请求来源不正确", 403) };
   const db = database();
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const user = await getChatGPTUser();
+  const user = await getCurrentUser(request);
   if (!user) return jsonError("请先登录", 401);
   if (!sameOrigin(request)) return jsonError("请求来源不正确", 403);
   let body: unknown;

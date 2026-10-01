@@ -1,11 +1,11 @@
-import { getChatGPTUser } from "@/app/chatgpt-auth";
+import { getCurrentUser } from "@/lib/auth";
 import { byProfileId, database, jsonError, ownProfile, sameOrigin } from "@/lib/database";
 import { z } from "zod";
 
 export const runtime = "edge";
 
 export async function POST(request: Request) {
-  const user = await getChatGPTUser();
+  const user = await getCurrentUser(request);
   if (!user) return jsonError("请先登录", 401);
   if (!sameOrigin(request)) return jsonError("请求来源不正确", 403);
   let body: unknown;

@@ -87,5 +87,19 @@ a { color: inherit; }
 .profile-summary { display: grid; gap: 9px; padding: 24px; }.profile-summary p { margin: 0; line-height: 1.6; }
 .status { display: inline-flex; align-items: center; width: fit-content; border-radius: 999px; padding: 6px 10px; background: #ece3ff; color: #4e2094; font-size: .8rem; font-weight: 700; }.status.off { background: #f0edf2; color: #665d70; }
 .footer-note { margin-top: 24px; color: #756c7e; font-size: .78rem; line-height: 1.6; }
+.account-shell { min-height: 100vh; background: radial-gradient(circle at 12% 15%, #eee5ff, transparent 34%), var(--background); }
+.account-main { max-width: 620px; margin: 0 auto; padding: 54px 22px 80px; }
+.account-main h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); margin: 0 0 24px; }
+.account-sections { display: grid; gap: 20px; }
+.account-card { padding: clamp(22px, 4vw, 34px); }
+.account-card h2 { margin: 0 0 14px; font-size: 1.3rem; }
+.account-card form > .primary-btn { width: 100%; margin-top: 14px; }
+.account-card .field input { width: 100%; padding: 10px 13px; border: 1px solid #d6ccdf; background: #fff; }
+.account-card .hint { display: block; margin: 0 0 15px; }
+.account-card .hint a { color: #5725a0; }
+.account-card .candidate-actions a { text-decoration: none; display: inline-flex; align-items: center; }
+.ai-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: -8px; margin-bottom: 18px; }
+.ai-suggestion { border: 1px solid #d8c8f3; background: #f9f5ff; border-radius: 13px; padding: 15px; line-height: 1.6; margin-bottom: 20px; }
+.ai-suggestion p { margin: 8px 0; }
 @media (max-width: 900px) { .workspace { grid-template-columns: 1fr; } .story { min-height: auto; padding: 28px 28px 30px; } .story h1 { font-size: 2.45rem; margin: 14px 0 5px; } .story-copy { margin: 5px 0 18px; max-width: none; } .orbit { display: none; } .content { padding: 26px 22px 48px; } }
 @media (max-width: 560px) { .topbar { padding: 0 19px; } .topbar-note { display: none; } .story { min-height: 0; padding: 17px 22px 19px; } .eyebrow { display: none; } .story h1 { font-size: 1.62rem; line-height: 1.25; margin: 0 0 4px; } .story h1 br { display: none; } .story-copy { font-size: .85rem; line-height: 1.45; margin: 0; } .story-foot { display: none; } .content { padding: 18px 18px 42px; } .content-head { display: block; margin-bottom: 16px; } .content h2 { font-size: 1.5rem; } .field-pair { grid-template-columns: 1fr; gap: 0; } .form-card { padding: 20px; } .actions { flex-wrap: wrap; } .actions .primary-btn { flex: 1; } }

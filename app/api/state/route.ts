@@ -1,4 +1,4 @@
-import { getChatGPTUser } from "@/app/chatgpt-auth";
+import { getCurrentUser } from "@/lib/auth";
 import { database, jsonError, ownProfile } from "@/lib/database";
 import { eligible, explainMatch } from "@/lib/matching";
 import { rowToInput, type ProfileRow } from "@/lib/profile";
@@ -7,8 +7,8 @@ export const runtime = "edge";
 
 type Pair = { from_profile_id: string; to_profile_id: string };
 
-export async function GET() {
-  const user = await getChatGPTUser();
+export async function GET(request: Request) {
+  const user = await getCurrentUser(request);
   if (!user) return jsonError("请先登录", 401);
   try {
     const db = database();

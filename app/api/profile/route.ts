@@ -1,4 +1,4 @@
-import { getChatGPTUser } from "@/app/chatgpt-auth";
+import { getCurrentUser } from "@/lib/auth";
 import { database, jsonError, ownProfile, sameOrigin } from "@/lib/database";
 import { profileSchema } from "@/lib/profile";
 
@@ -13,7 +13,7 @@ const columns = [
 ] as const;
 
 export async function POST(request: Request) {
-  const user = await getChatGPTUser();
+  const user = await getCurrentUser(request);
   if (!user) return jsonError("请先登录", 401);
   if (!sameOrigin(request)) return jsonError("请求来源不正确", 403);
   if (!request.headers.get("content-type")?.includes("application/json")) return jsonError("需要 JSON 请求", 415);
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const user = await getChatGPTUser();
+  const user = await getCurrentUser(request);
   if (!user) return jsonError("请先登录", 401);
   if (!sameOrigin(request)) return jsonError("请求来源不正确", 403);
   try {

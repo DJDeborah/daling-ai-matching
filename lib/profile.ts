@@ -7,6 +7,7 @@ export const genderLabels: Record<Gender, string> = { man: "男", woman: "女", 
 const optionalText = (max: number) => z.string().trim().max(max);
 const optionalHeight = z.number().int().min(120).max(230).nullable();
 const obviousContact = /(?:https?:\/\/|www\.|[\w.+-]+@[\w.-]+\.[a-z]{2,}|(?:\+?\d[\s-]?){9,}|(?:微信号|加我微信|telegram\s*[:：]|wx\s*[:：]))/i;
+export function containsContact(value: string): boolean { return obviousContact.test(value); }
 
 export const profileSchema = z.object({
   name: z.string().trim().min(2).max(24),

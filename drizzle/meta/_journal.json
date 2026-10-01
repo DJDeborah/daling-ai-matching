@@ -15,6 +15,13 @@
       "when": 1790781679517,
       "tag": "0001_smart_yellowjacket",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790821560738,
+      "tag": "0002_warm_blue_blade",
+      "breakpoints": true
     }
   ]
 }
