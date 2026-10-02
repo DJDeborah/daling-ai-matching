@@ -3,13 +3,15 @@ import { database, jsonError, sameOrigin } from "@/lib/database";
 import {
   answerConversation, completeConversation, completionSchema, ConversationConflict,
   ConversationLimit, ConversationValidation, loadConversation, resetConversation,
+  ConversationAiUnavailable, deepenConversation,
 } from "@/lib/conversation";
 import { containsContact } from "@/lib/profile";
 import { z } from "zod";
 
 export const runtime = "edge";
 
-const answerSchema = z.object({ message: z.string().trim().min(1).max(500), turn: z.number().int().min(0) }).strict();
+const revisionSchema={turn:z.number().int().min(0),revision:z.string().min(1).max(100)};
+const answerSchema = z.object({ message: z.string().trim().min(1).max(700), ...revisionSchema }).strict();
 
 async function body(request: Request, maxLength: number): Promise<unknown> {
   if (!request.headers.get("content-type")?.includes("application/json")) throw new InputError("需要 JSON 请求", 415);
@@ -25,6 +27,7 @@ function failure(error: unknown): Response {
   if (error instanceof ConversationConflict) return jsonError(error.message, 409);
   if (error instanceof ConversationLimit) return jsonError(error.message, 429);
   if (error instanceof ConversationValidation) return jsonError(error.message, 400);
+  if (error instanceof ConversationAiUnavailable) return jsonError(error.message, 503);
   console.error("conversation request failed", error);
   return jsonError("对话暂时不可用，请稍后重试", 503);
 }
@@ -42,12 +45,23 @@ export async function POST(request: Request) {
   if (!user) return jsonError("请先注册或登录", 401);
   if (!sameOrigin(request)) return jsonError("请求来源不正确", 403);
   try {
-    const parsed = answerSchema.safeParse(await body(request, 1600));
-    if (!parsed.success) return jsonError("请填写当前问题的回答，最多 500 字", 400);
+    const parsed = answerSchema.safeParse(await body(request, 2500));
+    if (!parsed.success) return jsonError("请填写当前问题的回答，最多 700 字", 400);
     // No contact details enter the transcript or the AI provider.
     if (containsContact(parsed.data.message)) return jsonError("对话中不要填写联系方式；完成资料后可单独设置分享授权", 400);
-    const result = await answerConversation(database(), user.userId, parsed.data.turn, parsed.data.message);
+    const result = await answerConversation(database(), user.userId, parsed.data.turn, parsed.data.revision, parsed.data.message);
     return Response.json(result, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) { return failure(error); }
+}
+
+export async function PUT(request: Request) {
+  const user = await getCurrentUser(request);
+  if (!user) return jsonError("请先注册或登录", 401);
+  if (!sameOrigin(request)) return jsonError("请求来源不正确", 403);
+  try {
+    const parsed = z.object(revisionSchema).strict().safeParse(await body(request, 250));
+    if (!parsed.success) return jsonError("请求内容无效", 400);
+    return Response.json(await deepenConversation(database(), user.userId, parsed.data.turn, parsed.data.revision), { headers: { "Cache-Control": "no-store" } });
   } catch (error) { return failure(error); }
 }
 
@@ -68,6 +82,8 @@ export async function DELETE(request: Request) {
   if (!user) return jsonError("请先注册或登录", 401);
   if (!sameOrigin(request)) return jsonError("请求来源不正确", 403);
   try {
-    return Response.json(await resetConversation(database(), user.userId), { headers: { "Cache-Control": "no-store" } });
+    const parsed=z.object(revisionSchema).strict().safeParse(await body(request,250));
+    if(!parsed.success) return jsonError("请求内容无效，请刷新后重试",400);
+    return Response.json(await resetConversation(database(), user.userId, parsed.data.turn, parsed.data.revision), { headers: { "Cache-Control": "no-store" } });
   } catch (error) { return failure(error); }
 }

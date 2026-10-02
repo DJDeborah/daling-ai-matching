@@ -1,8 +1,8 @@
 import { env } from "cloudflare:workers";
 
-export type AiMessage = { role: "system" | "user"; content: string };
+export type AiMessage = { role: "system" | "user" | "assistant"; content: string };
 
-export async function reserveAiCall(db: D1Database, userId: string, maxPerDay = 40): Promise<string | null> {
+export async function reserveAiCall(db: D1Database, userId: string, maxPerDay = 80): Promise<string | null> {
   const eventId = crypto.randomUUID();
   const now = new Date().toISOString();
   const since = new Date(Date.now() - 24 * 3600_000).toISOString();
@@ -19,6 +19,10 @@ export async function releaseAiCall(db: D1Database, eventId: string): Promise<vo
 
 export async function deepseekJson(messages: AiMessage[], maxTokens = 400): Promise<unknown> {
   if (!env.DEEPSEEK_API_KEY) throw new Error("AI secret is unavailable");
+  const signal = AbortSignal.timeout(20000);
+  // JSON mode can occasionally return empty or malformed content. Retry once
+  // within the same time budget; never use a guessed local answer.
+  for (let attempt = 0; attempt < 2; attempt++) {
   const response = await fetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`, "Content-Type": "application/json" },
@@ -26,11 +30,18 @@ export async function deepseekJson(messages: AiMessage[], maxTokens = 400): Prom
       model: "deepseek-flash", thinking: { type: "disabled" },
       response_format: { type: "json_object" }, max_tokens: maxTokens, messages,
     }),
-    signal: AbortSignal.timeout(20000),
+    signal,
   });
   if (!response.ok) throw new Error(`AI provider returned ${response.status}`);
   const result = await response.json() as { choices?: { finish_reason?: string; message?: { content?: string } }[] };
   const choice = result.choices?.[0];
-  if (choice?.finish_reason !== "stop" || !choice.message?.content) throw new Error("Incomplete AI response");
-  return JSON.parse(choice.message.content);
+  if (choice?.finish_reason !== "stop") throw new Error("Incomplete AI response");
+  try {
+    if (!choice.message?.content?.trim()) throw new Error("Empty AI response");
+    return JSON.parse(choice.message.content);
+  } catch {
+    if (attempt === 1) throw new Error("Invalid AI JSON response");
+  }
+  }
+  throw new Error("Invalid AI JSON response");
 }

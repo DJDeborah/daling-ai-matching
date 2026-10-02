@@ -1,4 +1,6 @@
 import type { ProfileRow } from "./profile";
+import { readMatchingDepth } from "./depth";
+import { compareDepth } from "./compatibility";
 
 function wants(person: ProfileRow, other: ProfileRow) {
   if (person.seeking !== "any" && person.seeking !== other.gender) return false;
@@ -33,7 +35,12 @@ export function explainMatch(a: ProfileRow, b: ProfileRow) {
   rank += Math.max(0, 12 - Math.abs(a.age - b.age));
   if (a.preferred_body_type && a.preferred_body_type === b.body_type) rank += 3;
   if (b.preferred_body_type && b.preferred_body_type === a.body_type) rank += 3;
-  if (a.preferred_zodiac && a.preferred_zodiac === b.zodiac) rank += 2;
-  if (b.preferred_zodiac && b.preferred_zodiac === a.zodiac) rank += 2;
-  return { rank, reasons };
+  const depth = compareDepth(readMatchingDepth(a.matching_json), readMatchingDepth(b.matching_json), a.city.trim().toLocaleLowerCase() === b.city.trim().toLocaleLowerCase());
+  // An unknown topic is neutral, never an automatic rejection. Evidence coverage limits its effect.
+  const aligned = depth.dimensions.filter(item => item.score !== null && item.score >= 75).map(item=>item.label);
+  if (aligned.length) reasons.push(`深度相符：${aligned.slice(0,2).join("、")}`);
+  const basicScore = Math.min(100, Math.round(50 + (common.length ? Math.min(30,common.length*10) : 0) + (a.city === b.city ? 20 : 0)));
+  const overallScore = depth.score === null ? null : Math.round(basicScore*(1-.7*depth.coverage/100)+depth.score*.7*depth.coverage/100);
+  const rankingScore = overallScore ?? basicScore;
+  return { rank: rankingScore*1000+rank, reasons, depth, overallScore };
 }

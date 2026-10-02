@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ConnectionVisual, MotionScope, Reveal } from "../design-motion";
 
 type AuthMode = "register" | "login";
 
@@ -64,11 +65,14 @@ export default function AccountApp({ username }: { username: string | null }) {
     } catch (e) { setError(e instanceof Error ? e.message : "删除失败"); setBusy(false); }
   }
 
-  return <div className="account-shell">
-    <header className="topbar"><a className="brand" href="/"><span className="brand-mark">✳</span>妲灵</a><span className="topbar-note">双向选择，认真认识</span>{username ? <a className="topbar-link" href="/">返回对话</a> : <span className="topbar-note">先创建账号，再开始对话</span>}</header>
-    <main className="account-main">
-      <p className="section-kicker">你的妲灵账号</p>
-      <h1>{username ? `你好，${username}` : "注册或登录"}</h1>
+  return <MotionScope><div className={`account-shell${username ? " signed-in" : ""}`}>
+    <header className="topbar"><a className="brand" href="/"><span className="brand-mark">d.</span>妲灵<span className="brand-en">DALING</span></a><span className="topbar-note">DEEPER CONVERSATIONS. BETTER CONNECTIONS.</span>{username ? <a className="topbar-link" href="/">返回对话</a> : <a className="topbar-link" href="/privacy">资料与隐私</a>}</header>
+    <main className="account-layout">
+      {!username && <section className="account-story"><Reveal><p className="section-kicker">A CONNECTION STARTS WITH YOU</p><h1>让对话<br/>走得<span>更深。</span></h1><p className="account-story-copy">从日常到价值观，从相处节奏到未来。<br/>和妲灵聊聊你，认识值得认真了解的人。</p></Reveal><ConnectionVisual/><div className="account-story-foot"><span>01 · 自然对话</span><span>02 · 深度档案</span><span>03 · 双向匹配</span></div><span className="account-watermark" aria-hidden="true">daling</span></section>}
+    <Reveal className="account-main" delay={.12}>
+      <p className="section-kicker">{username ? "YOUR ACCOUNT" : "YOUR FIRST STEP"}</p>
+      <h2 className="account-title">{username ? `你好，${username}` : mode === "register" ? "先认识你。" : "欢迎回来。"}</h2>
+      {!username && <p className="account-intro">{mode === "register" ? "创建你的账号，把每一次对话好好保存。" : "登录后，从上一次的对话继续。"}</p>}
       {error && <p className="error" role="alert">{error}</p>}
       {message && <p className="notice" role="status">{message}</p>}
       {!username ? <div className="card account-card">
@@ -89,6 +93,7 @@ export default function AccountApp({ username }: { username: string | null }) {
         <section className="card account-card"><h2>修改密码</h2><form onSubmit={changePassword}><div className="field"><label htmlFor="current-password">当前密码</label><input id="current-password" type="password" autoComplete="current-password" required value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} /></div><div className="field"><label htmlFor="new-password">新密码</label><input id="new-password" type="password" autoComplete="new-password" required minLength={15} maxLength={128} value={newPassword} onChange={e => setNewPassword(e.target.value)} /></div><button className="secondary-btn" type="submit" disabled={busy}>修改密码</button></form></section>
         <section className="card account-card"><h2>永久删除账号</h2><p className="muted small">账号、对话、报告、资料、心动、屏蔽记录和登录会话都会删除，无法恢复。请输入密码确认。</p><form onSubmit={deleteAccount}><div className="field"><label htmlFor="delete-password">当前密码</label><input id="delete-password" type="password" autoComplete="current-password" required value={deletePassword} onChange={e => setDeletePassword(e.target.value)} /></div><button className="secondary-btn danger-btn" type="submit" disabled={busy}>永久删除账号与资料</button></form></section>
       </div>}
+    </Reveal>
     </main>
-  </div>;
+  </div></MotionScope>;
 }

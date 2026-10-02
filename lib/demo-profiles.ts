@@ -1,6 +1,7 @@
-import type { Gender, ProfileRow } from "./profile";
+import { blankProfile, matchingDocument, type Gender, type ProfileRow } from "./profile";
+import type { DepthProfile } from "./depth";
 
-export const DEMO_VERSION = 1;
+export const DEMO_VERSION = 2;
 
 type DemoSpec = {
   id: string; name: string; gender: Gender; age: number; city: string;
@@ -30,7 +31,24 @@ const specs: DemoSpec[] = [
   { id: "demo-18", name: "样例·木棉", gender: "nonbinary", age: 36, city: "北京", height: 168, interests: ["旅行", "纪录片", "烹饪"], about: "爱探索不同地方的食物，也喜欢纪录片。", partnerNote: "希望能认真交流，并接受彼此的不同。" },
 ];
 
-export const demoRows: ProfileRow[] = specs.map(spec => ({
+function demoDepth(index: number): DepthProfile {
+  // Six explicitly fictional ways of relating, repeated across a varied synthetic pool.
+  const n = index % 6;
+  const calm = n % 2 === 0;
+  const independent = n === 0 || n === 4;
+  const practical = n === 2 || n === 5;
+  const meta = (summary: string) => ({ status: "answered" as const, summary, answer: `虚构回答：${summary}` });
+  return { version: 1, topics: {
+    values: { ...meta(independent ? "重视坦诚、独立，也希望共同成长。" : "重视平等、稳定和家人，也愿意探索新体验。"), priorities: independent ? ["honesty","independence","growth"] : ["equality","stability","family","exploration"] },
+    conflict: { ...meta(calm ? "希望先冷静，再认真倾听并落实行动，也接受先写下想法。" : "希望尽早聊清楚，也接受约定时间冷静后再谈。"), approach: calm ? "cooldown_then_talk" : "talk_now", accepts: calm ? ["cooldown_then_talk","write_then_talk"] : ["talk_now","cooldown_then_talk"], repairNeeds: ["listening","practical_help"] },
+    support: { ...meta(practical ? "需要实际帮助和安慰，愿意提供倾听与实际帮助。" : "低落时需要倾听和陪伴，愿意倾听、陪伴，也给彼此空间。"), needs: practical ? ["practical_help","reassurance"] : ["listening","companionship"], offers: practical ? ["listening","practical_help"] : ["listening","companionship","space"] },
+    rhythm: { ...meta(independent ? "联系可以灵活安排，也接受每日简短沟通，希望保留较多独处时间。" : "喜欢每天联系，共同时间和独处保持平衡，也接受灵活安排。"), contact: independent ? "flexible" : "daily", acceptsContact: ["daily","flexible"], time: independent ? "independent" : "balanced", acceptsTime: independent ? ["independent","balanced"] : ["balanced","frequent"] },
+    future: { ...meta(n === 3 ? "希望先了解彼此，暂不考虑婚姻或孩子，居住安排可讨论。" : n === 1 ? "期待长期关系，想结婚和有孩子，可以讨论迁居。" : "期待长期关系，婚育保持开放，迁居愿意讨论。"), goal: n === 3 ? "exploring" : "long_term", acceptsGoals: n === 3 ? ["exploring"] : ["long_term","exploring"], marriage: n === 3 ? "not_want" : n === 1 ? "want" : "open", children: n === 3 ? "not_want" : n === 1 ? "want" : "open", relocation: "discuss" },
+    boundaries: { ...meta(independent ? "重视独立隐私，慢慢了解也接受自然推进，消费各自管理也可灵活商量。" : "重视独立隐私，自然推进关系，共同消费灵活商量。"), privacy: "independent", acceptsPrivacy: ["independent"], pace: independent ? "slow" : "balanced", acceptsPace: ["slow","balanced"], money: independent ? "separate" : "flexible", acceptsMoney: ["separate","flexible"] },
+  } };
+}
+
+export const demoRows: ProfileRow[] = specs.map((spec, index) => ({
   profile_id: spec.id, user_id: `synthetic:${spec.id}`, name: spec.name,
   gender: spec.gender, seeking: "any", age: spec.age, min_age: 18, max_age: 80,
   city: spec.city, preferred_city: spec.preferredCity ?? "", height_cm: spec.height,
@@ -40,4 +58,5 @@ export const demoRows: ProfileRow[] = specs.map(spec => ({
   contact_kind: "other", contact_value: "", contact_share: 0, visible: 1,
   adult_confirmed_at: "synthetic", pool_consented_at: null,
   created_at: "synthetic", updated_at: "synthetic",
+  matching_json: JSON.stringify(matchingDocument({...blankProfile,name:spec.name,gender:spec.gender,seeking:"any",age:spec.age,minAge:18,maxAge:80,city:spec.city,preferredCity:spec.preferredCity ?? "",heightCm:spec.height,interests:spec.interests,about:spec.about,partnerNote:spec.partnerNote,depth:demoDepth(index)})),
 }));

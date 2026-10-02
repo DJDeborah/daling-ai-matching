@@ -11,6 +11,7 @@ export const profiles = sqliteTable("profiles", {
   school: text("school").notNull(), mbti: text("mbti").notNull(), zodiac: text("zodiac").notNull(),
   preferredZodiac: text("preferred_zodiac").notNull(), interestsJson: text("interests_json").notNull(),
   about: text("about").notNull(), partnerNote: text("partner_note").notNull(),
+  matchingJson: text("matching_json").notNull().default('{"version":2,"depth":{"version":1,"topics":{}}}'),
   contactKind: text("contact_kind").notNull(), contactValue: text("contact_value").notNull(),
   contactShare: integer("contact_share").notNull(), visible: integer("visible").notNull(),
   adultConfirmedAt: text("adult_confirmed_at").notNull(), poolConsentedAt: text("pool_consented_at"),
@@ -71,6 +72,8 @@ export const conversations = sqliteTable("conversations", {
   draftJson: text("draft_json").notNull(),
   messagesJson: text("messages_json").notNull(),
   updatedAt: text("updated_at").notNull(),
+  protocolVersion: integer("protocol_version").notNull().default(1),
+  questionText: text("question_text").notNull().default(""),
 });
 
 export const matchReports = sqliteTable("match_reports", {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { blankDepth, depthSchema, readMatchingDepth } from "./depth";
 
 export const genderOptions = ["man", "woman", "nonbinary"] as const;
 export type Gender = (typeof genderOptions)[number];
@@ -30,6 +31,7 @@ export const profileSchema = z.object({
   interests: z.array(z.string().trim().min(1).max(20)).max(8),
   about: optionalText(400),
   partnerNote: optionalText(240),
+  depth: depthSchema.default(blankDepth),
   contactKind: z.enum(["wechat", "telegram", "email", "other"]),
   contactValue: optionalText(100),
   contactShare: z.boolean(),
@@ -51,6 +53,7 @@ export const profileSchema = z.object({
   if (value.interests.some(text => obviousContact.test(text))) {
     ctx.addIssue({ code: "custom", path: ["interests"], message: "兴趣标签中不要填写联系方式" });
   }
+  if (obviousContact.test(JSON.stringify(value.depth))) ctx.addIssue({ code: "custom", path: ["depth"], message: "深度档案中不要填写联系方式" });
 });
 
 export type ProfileInput = z.infer<typeof profileSchema>;
@@ -62,6 +65,7 @@ export const blankProfile: DraftProfile = {
   preferredHeightMax: null, bodyType: "", preferredBodyType: "", school: "",
   mbti: "", zodiac: "", preferredZodiac: "", interests: [], about: "",
   partnerNote: "", contactKind: "wechat", contactValue: "", contactShare: false,
+  depth: blankDepth(),
   visible: false, adultConfirmed: false, poolConsent: false,
 };
 
@@ -75,6 +79,7 @@ export type ProfileRow = {
   partner_note: string; contact_kind: string; contact_value: string;
   contact_share: number; visible: number; adult_confirmed_at: string;
   pool_consented_at: string | null; created_at: string; updated_at: string;
+  matching_json?: string;
 };
 
 export function rowToInput(row: ProfileRow): ProfileInput {
@@ -89,7 +94,17 @@ export function rowToInput(row: ProfileRow): ProfileInput {
     school: row.school, mbti: row.mbti, zodiac: row.zodiac,
     preferredZodiac: row.preferred_zodiac, interests, about: row.about,
     partnerNote: row.partner_note, contactKind: row.contact_kind as ProfileInput["contactKind"],
+    depth: readMatchingDepth(row.matching_json),
     contactValue: row.contact_value, contactShare: row.contact_share === 1,
     visible: row.visible === 1, adultConfirmed: true, poolConsent: true,
+  };
+}
+
+export function matchingDocument(profile: DraftProfile | ProfileInput) {
+  return {
+    version: 2,
+    basics: { name: profile.name, gender: profile.gender, age: profile.age, city: profile.city, heightCm: profile.heightCm, bodyType: profile.bodyType, school: profile.school, mbti: profile.mbti, zodiac: profile.zodiac, interests: profile.interests, about: profile.about },
+    preferences: { seeking: profile.seeking, minAge: profile.minAge, maxAge: profile.maxAge, preferredCity: profile.preferredCity, preferredHeightMin: profile.preferredHeightMin, preferredHeightMax: profile.preferredHeightMax, preferredBodyType: profile.preferredBodyType, preferredZodiac: profile.preferredZodiac, partnerNote: profile.partnerNote },
+    depth: profile.depth,
   };
 }
