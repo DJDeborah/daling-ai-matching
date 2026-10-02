@@ -57,7 +57,7 @@ overall = round(basic × (1 - 0.7 × c) + deep × 0.7 × c)
 
 匹配的硬条件是**双方**的性别偏好、年龄区间、城市与身高要求，并且真实资料需可见及已授权入池。真实用户联系方式只在双方心动且双方开启分享时返回。可选 AI 报告发送本人的精简兴趣、期待、深度摘要及虚构样例的既定比较理由；不发送真实候选人的深度回答或联系方式。
 
-当前调用使用 `deepseek-flash`，关闭 thinking 并使用 JSON 输出模式。JSON 模式仍需字段与语义校验。格式失败最多重试一次，提取字段或问题契约失败可请求一次修正；所有尝试共享 20 秒预算，仍失败则暂停采访并保留输入。错误日志只记录受控原因，不记录用户回答、生成内容或密钥。已保存档案的确定性报告继续可读。DeepSeek 官方 [JSON Output 指南](https://api-docs.deepseek.com/guides/json_mode/) 提示可能出现空内容；[Thinking Mode](https://api-docs.deepseek.com/guides/thinking_mode/) 说明关闭思考模式的请求参数。
+当前调用使用 `deepseek-flash`，关闭 thinking，先请求 JSON 模式。该模式空白或格式失败时，最多再请求一次普通文本输出，仍要求解析为相同 JSON 并校验；字段或问题契约失败可请求一次修正。所有尝试共享 20 秒预算，仍失败则暂停采访并保留输入。错误日志只记录受控原因，不记录用户回答、生成内容或密钥。已保存档案的确定性报告继续可读。DeepSeek 官方 [JSON Output 指南](https://api-docs.deepseek.com/guides/json_mode/) 提示可能出现空内容；[Thinking Mode](https://api-docs.deepseek.com/guides/thinking_mode/) 说明关闭思考模式的请求参数。
 
 新版视觉采用自主实现的留白、大字、蓝色品牌、轨道动画、渐入卡片和消息过渡，适配减少动画偏好。独立设计参考为 [Codrops 的滚动字体动画网站](https://tympanus.net/Development/OnScrollTypographyAnimations/)（[MIT 源码](https://github.com/codrops/OnScrollTypographyAnimations)），组件参考为 [Magic UI](https://github.com/magicuidesign/magicui)（MIT），实际动画依赖 [Motion](https://github.com/motiondivision/motion/blob/main/LICENSE.md)（MIT）。未取得 Eloqwnt 的开源许可，未复制其源码和素材。
 

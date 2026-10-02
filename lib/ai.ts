@@ -27,7 +27,8 @@ export async function deepseekJson(messages: AiMessage[], maxTokens = 400, signa
     headers: { Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "deepseek-flash", thinking: { type: "disabled" }, temperature: 0.4,
-      response_format: { type: "json_object" }, max_tokens: maxTokens, messages,
+      ...(attempt === 0 ? { response_format: { type: "json_object" } } : {}),
+      max_tokens: maxTokens, messages,
     }),
     signal,
   });
@@ -40,7 +41,8 @@ export async function deepseekJson(messages: AiMessage[], maxTokens = 400, signa
   }
   try {
     if (!choice.message?.content?.trim()) throw new Error("Empty AI response");
-    return JSON.parse(choice.message.content);
+    const content = choice.message.content.trim().replace(/^```(?:json)?\s*([\s\S]*?)\s*```$/i, "$1");
+    return JSON.parse(content);
   } catch {
     if (attempt === 1) throw new Error("Invalid AI JSON response");
   }
