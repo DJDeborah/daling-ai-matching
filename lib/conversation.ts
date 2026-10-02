@@ -121,7 +121,7 @@ async function interpretAnswer(db: D1Database, userId: string, view: Conversatio
       const reason = error instanceof Error ? error.message : "invalid interview response";
       const repairable = ["invalid interview response", "invalid extracted value", "invalid interview question", "cannot skip required topic"].includes(reason);
       if (attempt === 1 || !repairable || signal.aborted) throw error;
-      messages.push({ role: "system", content: `上一次生成未通过服务器校验（${reason}）。请重新理解同一条用户回答并输出完整JSON。严格使用当前主题字段契约，不要跨主题填值；advance或skip时questionKey=${conversationSteps[view.step + 1]?.key ?? "review"}，clarify时questionKey=${step.key}。reply不提问，question只提一个主要问题。不要编造或猜测未提供的内容。` });
+      messages.splice(messages.length - 1, 0, { role: "system", content: `上一次生成未通过服务器校验（${reason}）。请重新理解同一条用户回答并输出完整JSON。严格使用当前主题字段契约，不要跨主题填值；advance或skip时questionKey=${conversationSteps[view.step + 1]?.key ?? "review"}，clarify时questionKey=${step.key}。reply不提问，question只提一个主要问题。不要编造或猜测未提供的内容。` });
     }
     }
     throw new Error("invalid interview response");
