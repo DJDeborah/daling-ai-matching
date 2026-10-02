@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   } catch { return jsonError("请求内容无效", 400); }
   const parsed = z.object({ currentPassword: z.string(), newPassword: z.string() }).safeParse(data);
   if (!parsed.success || !validLoginPassword(parsed.data.currentPassword)) return jsonError("当前密码不正确", 401);
-  if (!validNewPassword(parsed.data.newPassword)) return jsonError("新密码需至少 15 位、最多 128 位", 400);
+  if (!validNewPassword(parsed.data.newPassword)) return jsonError("请输入新密码，最多 128 个字符", 400);
 
   try {
     const db = database();

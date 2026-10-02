@@ -69,12 +69,14 @@ export default function ChatApp({ username }: { username: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [resumed, setResumed] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     void apiJson<Conversation>("/api/conversation").then(async state => {
       setConversation(state);
+      setResumed(state.turn > 0);
       if (state.status === "complete") {
         const result = await apiJson<ReportResponse>("/api/report");
         setReport(result.report); setAiAvailable(result.aiAvailable);
@@ -93,7 +95,7 @@ export default function ChatApp({ username }: { username: string }) {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: answer.trim(), turn: conversation.turn, revision:conversation.revision }),
       });
-      setConversation(next); setAnswer("");
+      setConversation(next); setAnswer(""); setResumed(false);
     } catch (e) { setError(e instanceof Error ? e.message : "发送失败"); }
     finally { setBusy(false); }
   }
@@ -136,6 +138,7 @@ export default function ChatApp({ username }: { username: string }) {
     try {
       const next = await apiJson<Conversation>("/api/conversation", { method: "DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({turn:conversation?.turn,revision:conversation?.revision}) });
       setConversation(next); setReport(null); setReportConsent(false); setAdultConfirmed(false); setPoolConsent(false);
+      setAnswer(""); setResumed(false);
       setVisible(false); setContactShare(false); setContactValue("");
     } catch (e) { setError(e instanceof Error ? e.message : "重置失败"); }
     finally { setBusy(false); }
@@ -146,7 +149,7 @@ export default function ChatApp({ username }: { username: string }) {
     setBusy(true);setError("");setNotice("");
     try {
       const next=await apiJson<Conversation>("/api/conversation",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({turn:conversation.turn,revision:conversation.revision})});
-      setConversation(next);setReport(null);setAnswer("");setAdultConfirmed(false);setPoolConsent(false);setReportConsent(false);setVisible(false);setContactShare(false);setContactValue("");
+      setConversation(next);setReport(null);setAnswer("");setResumed(false);setAdultConfirmed(false);setPoolConsent(false);setReportConsent(false);setVisible(false);setContactShare(false);setContactValue("");
     } catch(e) {setError(e instanceof Error ? e.message : "暂时无法开始");}
     finally {setBusy(false);}
   }
@@ -159,6 +162,7 @@ export default function ChatApp({ username }: { username: string }) {
       {error && <div className="error" role="alert">{error}</div>}
       {notice && <div className="notice" role="status">{notice}</div>}
       {loading && <section className="card chat-panel chat-loading">正在加载对话…</section>}
+      {!loading && conversation && (resumed || conversation.status === "complete") && <section className="conversation-resume" aria-label="继续或开启对话"><div><strong>{conversation.status === "complete" ? resumed ? "已恢复上次的档案与报告" : "档案已保存，可以继续聊" : "继续上次的对话"}</strong><p>{conversation.status === "collecting" ? "进度已保存。发送新的回答，妲灵会结合之前的内容继续回应。" : conversation.status === "review" ? "上次已经聊完，可以核对资料并生成报告，也可以重新开始。" : "可以继续和妲灵聊深度问题，或从第一题开启新对话。"}</p></div><div className="conversation-resume-actions">{conversation.status === "complete" && <button className="primary-btn" type="button" disabled={busy} onClick={() => void deepen()}>继续深度对话</button>}<button className="secondary-btn" type="button" disabled={busy} onClick={() => void restart()}>开启新对话</button></div></section>}
       {!loading && conversation && conversation.status !== "complete" && <div className="chat-layout">
         <section className="card chat-panel" aria-label="匹配对话">
           <div className="chat-panel-head"><div><span className="chat-live-dot"/>妲灵 · DALING AI</div><span>{conversation.status === "review" ? "资料核对" : `${conversation.phase === "depth" ? "深度相处" : "初步了解"} · ${Math.min(conversation.step + 1, conversation.totalSteps)} / ${conversation.totalSteps}`}</span></div>

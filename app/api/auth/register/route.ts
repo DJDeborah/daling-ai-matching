@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   if (parsed.data.adultConfirmed !== true) return jsonError("本站仅供已满 18 岁的用户注册", 400);
   const username = normalizeUsername(parsed.data.username);
   if (!username) return jsonError("用户名需为 3–24 位英文字母、数字或下划线", 400);
-  if (!validNewPassword(parsed.data.password)) return jsonError("密码需至少 15 位、最多 128 位", 400);
+  if (!validNewPassword(parsed.data.password)) return jsonError("请输入密码，最多 128 个字符", 400);
 
   try {
     const db = database();

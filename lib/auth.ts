@@ -28,8 +28,7 @@ export function normalizeUsername(value: string): string | null {
 }
 
 export function validNewPassword(value: string): boolean {
-  const length = new TextEncoder().encode(value).length;
-  return value.length >= 15 && value.length <= 128 && length <= 256;
+  return validLoginPassword(value);
 }
 
 export function validLoginPassword(value: string): boolean {

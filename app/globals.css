@@ -110,6 +110,10 @@ a { color: inherit; }
 .chat-nav a { color: #fff; text-decoration: none; font-size: .85rem; border: 1px solid #ffffff55; padding: 9px 13px; border-radius: 999px; white-space: nowrap; }
 .chat-nav a:hover { background: #ffffff1c; }
 .chat-main { max-width: 1220px; padding: 34px 22px 62px; margin: auto; }
+.conversation-resume { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; margin-bottom: 22px; border: 1px solid #cfd8ff; border-radius: 18px; background: #f3f6ff; }
+.conversation-resume strong { font-size: 1rem; }
+.conversation-resume p { margin: 6px 0 0; color: #596377; font-size: .9rem; line-height: 1.6; }
+.conversation-resume-actions { display: flex; flex-wrap: wrap; gap: 10px; flex: none; }
 .chat-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
 .chat-heading h1 { font-size: clamp(2rem, 4.2vw, 3.15rem); letter-spacing: -.06em; margin: 2px 0 7px; line-height: 1.12; font-weight: 850; }
 .chat-heading p:last-child { margin: 0; color: #675e72; line-height: 1.6; }
