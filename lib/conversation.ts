@@ -92,8 +92,12 @@ async function interpretAnswer(db: D1Database, userId: string, view: Conversatio
   const isSkip = step.optional && skipped(message);
   const eventId = await reserveAiCall(db, userId);
   if (!eventId) throw new ConversationLimit("今天的 AI 对话次数已用完，请明天继续。你的进度已保存。");
+  const messages = buildInterviewPrompt(view, message, isSkip);
+  const signal = AbortSignal.timeout(20000);
   try {
-    const raw = await deepseekJson(buildInterviewPrompt(view, message, isSkip), 950);
+    for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+    const raw = await deepseekJson(messages, 950, signal);
     const result = aiOutput.safeParse(raw);
     if (!result.success) throw new Error("invalid interview response");
     const answer = result.data;
@@ -113,8 +117,19 @@ async function interpretAnswer(db: D1Database, userId: string, view: Conversatio
     const expectedKey = update ? (view.step + 1 < conversationSteps.length ? conversationSteps[view.step + 1].key : "review") : step.key;
     if (answer.questionKey !== expectedKey || containsContact(answer.reply) || containsContact(answer.question) || (answer.question.match(/[?？]/g)?.length ?? 0) > 1) throw new Error("invalid interview question");
     return { update, reply: answer.reply, question: expectedKey === "review" ? reviewQuestion : answer.question };
-  } catch {
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "invalid interview response";
+      const repairable = ["invalid interview response", "invalid extracted value", "invalid interview question", "cannot skip required topic"].includes(reason);
+      if (attempt === 1 || !repairable || signal.aborted) throw error;
+      messages.push({ role: "system", content: `上一次生成未通过服务器校验（${reason}）。请重新理解同一条用户回答并输出完整JSON。严格使用当前主题字段契约，不要跨主题填值；advance或skip时questionKey=${conversationSteps[view.step + 1]?.key ?? "review"}，clarify时questionKey=${step.key}。reply不提问，question只提一个主要问题。不要编造或猜测未提供的内容。` });
+    }
+    }
+    throw new Error("invalid interview response");
+  } catch (error) {
     await releaseAiCall(db, eventId);
+    const reason = error instanceof Error ? error.message : "unknown";
+    const safeReason = /^(invalid |Invalid AI |Incomplete AI |Empty AI |AI provider returned \d{3}|cannot skip required topic)/.test(reason) ? reason : error instanceof Error ? error.name : "unknown";
+    console.error("interview failed", safeReason);
     // Never guess deep preferences or silently replace the oriented dialogue with a form.
     throw new ConversationAiUnavailable("妲灵暂时没能完成这次回应。你的回答还在输入框里，请稍后重试。");
   }
