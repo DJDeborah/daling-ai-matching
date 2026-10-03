@@ -133,7 +133,11 @@ async function interpretAnswer(db: D1Database, userId: string, view: Conversatio
     // acknowledgment nor a local question is added to the provider's text.
     for (let attempt = 0; attempt < 2; attempt++) {
       const response = await deepseekText(chatMessages, signal);
-      if (response.content.length > 800 || containsContact(response.content) || /^\s*(?:\{|```)/.test(response.content) || (response.content.match(/[?？]/g)?.length ?? 0) > 1) {
+      // A quoted question or two parts of the same topic can contain several
+      // question marks. Punctuation cannot reliably identify topic changes.
+      const invalidReason = response.content.length > 800 ? "length" : containsContact(response.content) ? "contact" : /^\s*(?:\{|```)/.test(response.content) ? "structured" : null;
+      if (invalidReason) {
+        console.warn("interview chat rejected", JSON.stringify({ requestId, reason: invalidReason, characters: response.content.length }));
         if (attempt === 1) throw new Error("invalid chat response");
         chatMessages.splice(chatMessages.length - 1, 0, { role: "system", content: "请重新生成自然聊天原文：最多450字，不输出JSON、代码、联系方式或链接；只引导服务器指定主题，只问一个主要问题。" });
         continue;
