@@ -34,7 +34,7 @@ async function loadReport(db: D1Database, userId: string) {
   }
   let interests: string[] = [];
   try { const raw: unknown = JSON.parse(self.interests_json); if (Array.isArray(raw)) interests = raw.filter((item): item is string => typeof item === "string").slice(0, 8); } catch { /* Keep damaged legacy data out of model context. */ }
-  return { report: buildRuleReport(self, realRows, new Date().toISOString(), view.status === "complete" ? view.step : 19), context: { interests, partnerNote: self.partner_note } };
+  return { report: buildRuleReport(self, realRows, new Date().toISOString(), view.status === "complete" ? view.step : view.totalSteps,view.totalSteps), context: { interests, partnerNote: self.partner_note } };
 }
 
 async function cachedAiText(db: D1Database, userId: string, report: MatchReport) {

@@ -1,0 +1,33 @@
+Generation mode: built-in image_gen.imagegen
+Batch: exactly two independent requests issued in one parallel batch
+Generation date: 2026-10-03
+
+ASSET 1
+Filename: korean-cafe-editorial.png
+
+Use case: stylized-concept
+Asset type: original editorial gallery print illustration for a mature social connection website; portrait artwork
+Primary request: Create a complete imaginative late-night café scene as a sophisticated independent Korean art magazine illustration. Two adult human figures are small, naturally integrated elements in a richly designed scene: one sitting inside by an oversized architectural window, another approaching outside along a curving street. A floating abstract moon and artful long shadows quietly suggest anticipation and connection.
+Scene/backdrop: A dreamlike café interior interlocks with the street outside through a monumental arching window. Include an elegant table and chair, a few organically shaped plants, subtle architectural planes and a warm lamp. Use tasteful nonliteral perspective so interior, window, street and moon form one balanced composition.
+Style/medium: Full-composition editorial printmaking, matte gouache and hand-cut paper collage. Contemporary mature Korean independent art poster feeling; expressive flat shapes, restrained playful surrealism, confident organic curves, visible paper fibres, soft pigment irregularities and fine print grain. Sophisticated collectible gallery print, no childish storybook treatment.
+Composition/framing: Portrait 4:5 canvas. The complete environment fills most of the canvas from upper architecture and moon to lower curved street and long shadows. Keep all figures and important scene elements safely inside the edges, with a modest cream margin. Art should read as a whole composition when displayed with object-fit contain. Figures remain small supporting elements, never a large central character or sticker.
+Lighting/mood: Quiet, late-night, thoughtful and gently inviting; intimate pools of warm light and deep long shadows.
+Color palette: Warm cream paper, rich burgundy, muted dusty rose, deep olive and charcoal; disciplined palette with beautiful tonal balance.
+Materials/textures: Tactile uncoated ivory paper, uneven matte gouache pigment, layered cut-paper edges and delicate printed grain; artwork itself fills the canvas.
+Constraints: Exactly two adult people. Fully original illustration. Cohesive complete scene, mature and artistic, organic but carefully balanced. No words, no typography, no signage, no logos, no watermark, no UI.
+Avoid: Cute animals, bunnies, bears, chibi, emoji, kawaii faces, juvenile doodles, sticker artwork, a tiny centered motif in an empty field, photorealism, photography, 3D rendering, glossy gradients, candy colors, app screens, text.
+
+ASSET 2
+Filename: korean-connection-editorial.png
+
+Use case: stylized-concept
+Asset type: original editorial gallery print illustration for a mature social connection website; landscape artwork, companion to a cream and burgundy late-night café print
+Primary request: Create a complete dreamlike courtyard scene as a sophisticated independent Korean art magazine illustration. Exactly two adult silhouettes walk on separate winding paths that connect through one large flowing burgundy ribbon sweeping through the courtyard. Their quiet relationship is part of an imaginative whole scene.
+Scene/backdrop: A layered architectural courtyard of curved stairs, winding paths, arched and rectangular windows, a few sculptural plants and floating celestial shapes. The large burgundy ribbon draws the eye between the two separate paths, threading elegantly through architectural planes. Use tasteful nonliteral perspective and avoid literal diagram connections.
+Style/medium: Full-composition editorial printmaking, matte gouache and hand-cut paper collage. Contemporary mature Korean independent art poster feeling; expressive flat shapes, restrained playful surrealism, confident organic curves, visible paper fibres, soft pigment irregularities and fine print grain. Sophisticated collectible gallery print, no childish storybook treatment. Match the cream, burgundy, muted rose and olive sensibility of a companion late-night café print.
+Composition/framing: Landscape 3:2 canvas. The whole architectural environment spans most of the canvas from celestial shapes and windows at the top to curving paths, steps and grounded shadows below. Use a carefully balanced rhythm of large burgundy ribbon, cream openings, dark olive masses and rose planes. Keep both silhouettes and important scene elements safely inside the edges, with a modest cream margin. Art should retain the whole scene with object-fit contain. Adult figures are small supporting components, never sticker-like central mascots.
+Lighting/mood: Quietly playful and poetic, hopeful human connection, calm editorial restraint.
+Color palette: Warm cream paper, rich burgundy, muted dusty rose, deep olive and charcoal; disciplined palette with beautiful tonal balance.
+Materials/textures: Tactile uncoated ivory paper, uneven matte gouache pigment, layered cut-paper edges and delicate printed grain; artwork itself fills the canvas.
+Constraints: Exactly two adult human silhouettes. Fully original illustration. One large burgundy ribbon connects separate winding paths through a full balanced scene. No words, no typography, no signage, no logos, no watermark, no UI.
+Avoid: Cute animals, bunnies, bears, chibi, emoji, kawaii faces, juvenile doodles, sticker artwork, a tiny centered motif in an empty field, literal flowcharts, photorealism, photography, 3D rendering, glossy gradients, candy colors, app screens, text.
