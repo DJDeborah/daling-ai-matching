@@ -31,7 +31,7 @@ function dimension(key: DepthKey, components: (number | null)[], evidence: strin
 }
 function answered<T extends { status: string }>(topic: T | undefined): T | undefined { return topic?.status === "answered" ? topic : undefined; }
 
-export function compareDepth(a: DepthProfile, b: DepthProfile, sameCity = true): DepthMatch {
+export function compareDepth(a: DepthProfile, b: DepthProfile, sameCity: boolean | null = true): DepthMatch {
   const av=answered(a.topics.values), bv=answered(b.topics.values);
   const ac=answered(a.topics.conflict), bc=answered(b.topics.conflict);
   const as=answered(a.topics.support), bs=answered(b.topics.support);
@@ -43,7 +43,7 @@ export function compareDepth(a: DepthProfile, b: DepthProfile, sameCity = true):
     dimension("conflict", [ac && bc ? style(ac.approach,ac.accepts,bc.approach,bc.accepts) : null, ac && bc ? overlap(ac.repairNeeds,bc.repairNeeds) : null], "依据沟通时机、明确接受的方式与修复需求"),
     dimension("support", [as && bs ? needsMet(as.needs,bs.offers) : null, as && bs ? needsMet(bs.needs,as.offers) : null], "分别比较你的需要与对方的付出、对方的需要与你的付出"),
     dimension("rhythm", [ar && br ? style(ar.contact,ar.acceptsContact,br.contact,br.acceptsContact) : null, ar && br ? style(ar.time,ar.acceptsTime,br.time,br.acceptsTime) : null], "依据联系节奏、共同时间及双方明确可接受的安排"),
-    dimension("future", [af && bf ? style(af.goal,af.acceptsGoals,bf.goal,bf.acceptsGoals) : null, af && bf ? intention(af.marriage,bf.marriage) : null, af && bf ? intention(af.children,bf.children) : null, af && bf ? !sameCity && af.relocation === "stay" && bf.relocation === "stay" ? 0 : intention(af.relocation,bf.relocation) : null], "仅比较明确表达的关系、婚育与迁居计划，未知项不计分"),
+    dimension("future", [af && bf ? style(af.goal,af.acceptsGoals,bf.goal,bf.acceptsGoals) : null, af && bf ? intention(af.marriage,bf.marriage) : null, af && bf ? intention(af.children,bf.children) : null, af && bf ? sameCity === null ? null : !sameCity && af.relocation === "stay" && bf.relocation === "stay" ? 0 : intention(af.relocation,bf.relocation) : null], "仅比较明确表达的关系、婚育与迁居计划，未知项不计分"),
     dimension("boundaries", [ab && bb ? style(ab.privacy,ab.acceptsPrivacy,bb.privacy,bb.acceptsPrivacy) : null, ab && bb ? style(ab.pace,ab.acceptsPace,bb.pace,bb.acceptsPace) : null, ab && bb ? style(ab.money,ab.acceptsMoney,bb.money,bb.acceptsMoney) : null], "依据明确表达的隐私、推进节奏和消费方式"),
   ];
   let knownWeight=0,total=0;

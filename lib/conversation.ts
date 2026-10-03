@@ -7,7 +7,7 @@ import { parseDepth, depthKeys, type DepthKey } from "./depth";
 export { conversationSteps } from "./interview";
 
 export type ChatMessage = { role: "assistant" | "user"; content: string; topic?: StepKey; ai?: { source: "ai"; model: string; providerResponseId: string; requestId: string; elapsedMs: number } };
-export type ConversationStatus = "collecting" | "review" | "complete";
+export type ConversationStatus = "collecting" | "review" | "complete" | "paused";
 export type ConversationView = {
   turn: number;
   step: number;
@@ -34,7 +34,7 @@ type ConversationRow = {
   question_text: string;
 };
 
-const reviewQuestion = "已经聊完啦。请核对下方资料，再决定是否保存、是否进入匹配池。联系方式只在双方心动且双方都授权时显示。";
+const reviewQuestion = "请核对已提供的资料，再决定是否保存、是否进入匹配池。未回答的深度内容保持待了解。";
 const completeMessage = "资料已保存。现在可以查看匹配报告；你也可以稍后独立编辑资料。";
 const aiOutput = z.object({ decision: z.enum(["advance", "clarify", "skip"]), value: z.unknown() }).strict();
 
@@ -62,9 +62,9 @@ function readRow(row: ConversationRow): ConversationView {
     const messages: ChatMessage[] = Array.isArray(rawMessages)
       ? rawMessages.filter((item): item is ChatMessage => Boolean(item && typeof item === "object" && (item.role === "assistant" || item.role === "user") && typeof item.content === "string")).slice(-80)
       : [];
-    const status: ConversationStatus = row.status === "review" || row.status === "complete" ? row.status : "collecting";
+    const status: ConversationStatus = row.status === "review" || row.status === "complete" || row.status === "paused" ? row.status : "collecting";
     const step = Math.max(0, Math.min(conversationSteps.length, row.step));
-    const question = status === "collecting" ? row.question_text || conversationSteps[step]?.question || reviewQuestion : status === "review" ? reviewQuestion : "";
+    const question = status === "collecting" || status === "paused" ? row.question_text || conversationSteps[step]?.question || reviewQuestion : status === "review" ? reviewQuestion : "";
     const key=conversationSteps[step]?.key;
     return { turn: row.turn, step, status, draft, messages: messages.length ? messages : initial().messages, question, totalSteps: conversationSteps.length, topic: key ?? "review", phase: status === "collecting" ? step < 13 ? "basics" : "depth" : "review", revision: row.updated_at, inputLimit:key === "about" ? 400 : key === "partnerNote" ? 240 : 700 };
   } catch {
@@ -180,6 +180,23 @@ export class ConversationLimit extends Error {}
 export class ConversationValidation extends Error {}
 export class ConversationAiUnavailable extends Error {}
 
+export async function transitionConversation(db: D1Database, userId: string, turn: number, expectedRevision: string, action: "pause" | "resume" | "review"): Promise<ConversationView> {
+  const { row, view } = await snapshot(db, userId);
+  if (view.turn !== turn || row.updated_at !== expectedRevision) throw new ConversationConflict("对话已更新，请刷新后继续");
+  if (action === "pause" && view.status !== "collecting" && view.status !== "review") throw new ConversationConflict("请先返回对话");
+  if (action === "resume" && view.status !== "paused") throw new ConversationConflict("当前对话没有暂停");
+  if (action === "review" && view.status !== "paused" && view.status !== "collecting") throw new ConversationConflict("请先返回对话");
+  // Only these six required topics establish real matching credentials. Draft
+  // previews never turn blankProfile defaults into confirmed personal data.
+  if (action === "review" && view.step < 6) throw new ConversationValidation("先补充称呼、性别、年龄、城市和认识对象的基本偏好，再保存正式档案。现在仍可查看体验匹配。");
+  const status: ConversationStatus = action === "pause" ? "paused" : action === "review" || view.step >= conversationSteps.length ? "review" : "collecting";
+  const next: ConversationView = { ...view, status, revision: revision(), phase: status === "collecting" ? view.step < 13 ? "basics" : "depth" : "review" };
+  const write = await db.prepare("UPDATE conversations SET status = ?, turn = ?, updated_at = ? WHERE user_id = ? AND turn = ? AND updated_at = ?")
+    .bind(status, next.turn, next.revision, userId, turn, expectedRevision).run();
+  if (!write.meta.changes) throw new ConversationConflict("对话已更新，请刷新后继续");
+  return next;
+}
+
 export async function answerConversation(db: D1Database, userId: string, expectedTurn: number, expectedRevision: string, message: string): Promise<ConversationView> {
   const { row, view } = await snapshot(db, userId);
   if (view.turn !== expectedTurn || row.updated_at !== expectedRevision || view.status !== "collecting") throw new ConversationConflict("对话已更新，请刷新后继续");
@@ -216,6 +233,7 @@ export async function completeConversation(db: D1Database, userId: string, input
   const { row, view } = await snapshot(db, userId);
   if (view.turn !== input.turn || row.updated_at !== input.revision) throw new ConversationConflict("对话已更新，请刷新后核对当前档案再保存");
   if (view.status !== "review") throw new ConversationConflict("请先完成对话并核对资料");
+  if (view.step < 6) throw new ConversationValidation("请先确认基本资料，未回答的信息不能代为填写");
   const parsed = profileSchema.safeParse({ ...view.draft, ...input });
   if (!parsed.success) throw new ConversationValidation(parsed.error.issues[0]?.message ?? "请检查资料和同意选项");
   const profile: ProfileInput = parsed.data;
@@ -261,10 +279,11 @@ export async function resetConversation(db: D1Database, userId: string, expected
   const {row,view}=await snapshot(db,userId);
   if (view.turn !== expectedTurn || row.updated_at !== expectedRevision) throw new ConversationConflict("对话已更新，请刷新后继续");
   const first = initial();
-  const write=await db.prepare(`UPDATE conversations SET turn = 0, step = 0, status = 'collecting',
+  const writes=await db.batch([db.prepare(`UPDATE conversations SET turn = 0, step = 0, status = 'collecting',
     draft_json = ?, messages_json = ?, updated_at = ?, protocol_version = 2, question_text = ? WHERE user_id = ? AND turn = ? AND updated_at = ?`)
-    .bind(JSON.stringify(first.draft),JSON.stringify(first.messages),first.revision,first.question,userId,expectedTurn,expectedRevision).run();
-  if (!write.meta.changes) throw new ConversationConflict("对话已更新，请刷新后继续");
+    .bind(JSON.stringify(first.draft),JSON.stringify(first.messages),first.revision,first.question,userId,expectedTurn,expectedRevision),
+    db.prepare("DELETE FROM draft_match_reports WHERE user_id = ? AND EXISTS (SELECT 1 FROM conversations WHERE user_id = ? AND updated_at = ?)").bind(userId,userId,first.revision)]);
+  if (!writes[0]?.meta.changes) throw new ConversationConflict("对话已更新，请刷新后继续");
   return first;
 }
 
@@ -273,10 +292,12 @@ export async function deepenConversation(db: D1Database, userId: string, expecte
   if (view.turn !== expectedTurn || row.updated_at !== expectedRevision || (view.status !== "complete" && view.status !== "review")) throw new ConversationConflict("对话已更新，请在完成当前对话后补充深度档案");
   const profile = await ownProfile(db, userId);
   const draft = view.status === "complete" && profile ? rowToInput(profile) : view.draft;
-  const question = conversationSteps[13].question;
-  const next: ConversationView = { ...view, draft, status: "collecting", step: 13, turn: view.turn + 1, question, topic: "values", phase: "depth", revision: revision(), inputLimit: 700, messages: [{ role: "assistant", content: `基础资料已保留，我们接着聊深入一点的部分。\n\n${question}` }] };
-  const write = await db.prepare("UPDATE conversations SET status = 'collecting', step = 13, turn = ?, draft_json = ?, messages_json = ?, updated_at = ?, protocol_version = 2, question_text = ? WHERE user_id = ? AND turn = ? AND updated_at = ?")
-    .bind(next.turn, JSON.stringify(next.draft), JSON.stringify(next.messages), next.revision, question, userId, expectedTurn, row.updated_at).run();
+  const step = view.step < conversationSteps.length ? view.step : 13;
+  const topic = conversationSteps[step];
+  const question = topic.question;
+  const next: ConversationView = { ...view, draft, status: "collecting", step, turn: view.turn + 1, question, topic: topic.key, phase: step < 13 ? "basics" : "depth", revision: revision(), inputLimit: step < 13 ? 500 : 700, messages: [{ role: "assistant", content: `刚才的资料已保留，我们接着慢慢聊。\n\n${question}` }] };
+  const write = await db.prepare("UPDATE conversations SET status = 'collecting', step = ?, turn = ?, draft_json = ?, messages_json = ?, updated_at = ?, protocol_version = 2, question_text = ? WHERE user_id = ? AND turn = ? AND updated_at = ?")
+    .bind(step, next.turn, JSON.stringify(next.draft), JSON.stringify(next.messages), next.revision, question, userId, expectedTurn, row.updated_at).run();
   if (!write.meta.changes) throw new ConversationConflict("对话已更新，请刷新后继续");
   return next;
 }

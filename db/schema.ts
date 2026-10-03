@@ -83,3 +83,11 @@ export const matchReports = sqliteTable("match_reports", {
   reportJson: text("report_json").notNull(),
   createdAt: text("created_at").notNull(),
 });
+
+export const draftMatchReports = sqliteTable("draft_match_reports", {
+  userId: text("user_id").primaryKey().references(() => users.userId, { onDelete: "cascade" }),
+  profileUpdatedAt: text("profile_updated_at").notNull(),
+  demoVersion: integer("demo_version").notNull(),
+  reportJson: text("report_json").notNull(),
+  createdAt: text("created_at").notNull(),
+});

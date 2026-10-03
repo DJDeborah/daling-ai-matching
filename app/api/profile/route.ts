@@ -81,11 +81,13 @@ export async function DELETE(request: Request) {
         db.prepare("DELETE FROM profiles WHERE profile_id = ?").bind(current.profile_id),
         db.prepare("DELETE FROM conversations WHERE user_id = ?").bind(user.userId),
         db.prepare("DELETE FROM match_reports WHERE user_id = ?").bind(user.userId),
+        db.prepare("DELETE FROM draft_match_reports WHERE user_id = ?").bind(user.userId),
       ]);
     } else {
       await db.batch([
         db.prepare("DELETE FROM conversations WHERE user_id = ?").bind(user.userId),
         db.prepare("DELETE FROM match_reports WHERE user_id = ?").bind(user.userId),
+        db.prepare("DELETE FROM draft_match_reports WHERE user_id = ?").bind(user.userId),
       ]);
     }
     return Response.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });

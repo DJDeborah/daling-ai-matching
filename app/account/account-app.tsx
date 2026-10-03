@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ConnectionVisual, MotionScope, Reveal } from "../design-motion";
+import { MotionScope, Reveal } from "../design-motion";
 
 type AuthMode = "register" | "login";
 
@@ -68,7 +68,7 @@ export default function AccountApp({ username }: { username: string | null }) {
   return <MotionScope><div className={`account-shell${username ? " signed-in" : ""}`}>
     <header className="topbar"><a className="brand" href="/"><span className="brand-mark">d.</span>妲灵<span className="brand-en">DALING</span></a><span className="topbar-note">DEEPER CONVERSATIONS. BETTER CONNECTIONS.</span>{username ? <a className="topbar-link" href="/">返回对话</a> : <a className="topbar-link" href="/privacy">资料与隐私</a>}</header>
     <main className="account-layout">
-      {!username && <section className="account-story"><Reveal><p className="section-kicker">A CONNECTION STARTS WITH YOU</p><h1>让对话<br/>走得<span>更深。</span></h1><p className="account-story-copy">从日常到价值观，从相处节奏到未来。<br/>和妲灵聊聊你，认识值得认真了解的人。</p></Reveal><ConnectionVisual/><div className="account-story-foot"><span>01 · 自然对话</span><span>02 · 深度档案</span><span>03 · 双向匹配</span></div><span className="account-watermark" aria-hidden="true">daling</span></section>}
+      {!username && <section className="account-story"><img className="account-photo" src="https://images.pexels.com/photos/7688356/pexels-photo-7688356.jpeg?auto=compress&cs=tinysrgb&w=1000" alt="柔和粉色的咖啡馆空间"/><div className="account-photo-shade"/><Reveal><p className="section-kicker">A CONNECTION STARTS WITH YOU</p><h1>留一点时间，<br/>给<span>认真相遇。</span></h1><p className="account-story-copy">像坐下来喝一杯咖啡那样，慢慢聊聊你。<br/>从日常到相处方式，让相符的细节带来连接。</p></Reveal><div className="account-story-foot"><span>01 · 聊聊你</span><span>02 · 理解相处</span><span>03 · 寻找相符</span></div><a className="account-photo-credit" href="https://www.pexels.com/photo/the-interior-of-a-light-pink-themed-cafe-7688356/" target="_blank" rel="noreferrer">PHOTO · TARYN ELLIOTT</a></section>}
     <Reveal className="account-main" delay={.12}>
       <p className="section-kicker">{username ? "YOUR ACCOUNT" : "YOUR FIRST STEP"}</p>
       <h2 className="account-title">{username ? `你好，${username}` : mode === "register" ? "先认识你。" : "欢迎回来。"}</h2>
