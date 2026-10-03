@@ -14,7 +14,9 @@ export const childOptions = ["want", "not_want", "open"] as const;
 export const paceOptions = ["slow", "balanced", "quick"] as const;
 export const moneyOptions = ["separate", "shared", "flexible"] as const;
 
-const metadata = { status: z.enum(["answered", "skipped"]), summary: z.string().trim().max(200), answer: z.string().trim().max(700) };
+// A topic can take several chat turns. Each message is still limited to 700
+// characters; preserve all same-topic user messages retained in the transcript.
+const metadata = { status: z.enum(["answered", "skipped"]), summary: z.string().trim().max(200), answer: z.string().trim().max(30_000) };
 const list = <T extends readonly [string, ...string[]]>(options: T) => z.array(z.enum(options)).max(8).refine(v => new Set(v).size === v.length);
 export const depthSchemas = {
   values: z.object({ ...metadata, priorities: list(valueOptions) }).strict(),

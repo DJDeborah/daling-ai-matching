@@ -28,7 +28,12 @@ export async function deepseekJson(messages: AiMessage[], maxTokens = 400, signa
     body: JSON.stringify({
       model: "deepseek-flash", thinking: { type: "disabled" }, temperature: 0.4,
       ...(attempt === 0 ? { response_format: { type: "json_object" } } : {}),
-      max_tokens: maxTokens, messages,
+      max_tokens: maxTokens,
+      messages: attempt === 0 ? messages : [
+        ...messages.slice(0, -1),
+        { role: "system", content: "上一生成没有返回可解析的完整JSON。本次严格遵守前面规定的字段与枚举，只输出一个完整JSON对象，以{开始、以}结束。不能只输出空格、普通聊天文本或格式说明；自然聊天内容必须放在规定的JSON字段里。" },
+        ...messages.slice(-1),
+      ],
     }),
     signal,
   });

@@ -118,7 +118,8 @@ export default function MatchingApp({ signedIn, displayName }: Props) {
     }
     setBusy(true); setError(""); setMessage("");
     try {
-      await requestJson("/api/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(parsed.data) });
+      const { depth: _interview, ...basics } = parsed.data;
+      await requestJson("/api/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(basics) });
       await refresh();
       try { sessionStorage.removeItem("daling-draft"); sessionStorage.removeItem("daling-step"); } catch { /* optional device draft */ }
       setView("discover"); setMessage(parsed.data.visible ? "资料已发布，可以开始发现符合双方条件的人。" : "资料已私密保存。发布后才能进入匹配池。");

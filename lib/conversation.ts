@@ -2,11 +2,11 @@ import { ownProfile } from "./database";
 import { deepseekJson, releaseAiCall, reserveAiCall } from "./ai";
 import { blankProfile, containsContact, matchingDocument, profileSchema, rowToInput, type DraftProfile, type ProfileInput } from "./profile";
 import { z } from "zod";
-import { conversationSteps, parseValue, emptyValue, skipped, buildInterviewPrompt, type Step } from "./interview";
+import { conversationSteps, parseValue, emptyValue, skipped, buildInterviewPrompt, currentTopicAnswers, type Step, type StepKey } from "./interview";
 import { parseDepth, depthKeys, type DepthKey } from "./depth";
 export { conversationSteps } from "./interview";
 
-export type ChatMessage = { role: "assistant" | "user"; content: string };
+export type ChatMessage = { role: "assistant" | "user"; content: string; topic?: StepKey };
 export type ConversationStatus = "collecting" | "review" | "complete";
 export type ConversationView = {
   turn: number;
@@ -110,7 +110,9 @@ async function interpretAnswer(db: D1Database, userId: string, view: Conversatio
       let value = answer.value;
       // The model confirms that this is an answer before the original wording is saved.
       if (step.key === "about" || step.key === "partnerNote") value = message;
-      if (depthKeys.includes(step.key as DepthKey) && value && typeof value === "object" && !Array.isArray(value)) value = { ...value, status: "answered", answer: message };
+      if (depthKeys.includes(step.key as DepthKey) && value && typeof value === "object" && !Array.isArray(value)) {
+        value = { ...value, status: "answered", answer: [...currentTopicAnswers(view), message].join("\n\n") };
+      }
       update = parseValue(step.key, value);
       if (!update) throw new Error("invalid extracted value");
     }
@@ -119,7 +121,7 @@ async function interpretAnswer(db: D1Database, userId: string, view: Conversatio
     return { update, reply: answer.reply, question: expectedKey === "review" ? reviewQuestion : answer.question };
     } catch (error) {
       const reason = error instanceof Error ? error.message : "invalid interview response";
-      const repairable = ["invalid interview response", "invalid extracted value", "invalid interview question", "cannot skip required topic"].includes(reason);
+      const repairable = ["invalid interview response", "invalid extracted value", "invalid interview question", "cannot skip required topic", "Invalid AI JSON response"].includes(reason);
       if (attempt === 1 || !repairable || signal.aborted) throw error;
       messages.splice(messages.length - 1, 0, { role: "system", content: `上一次生成未通过服务器校验（${reason}）。请重新理解同一条用户回答并输出完整JSON。严格使用当前主题字段契约，不要跨主题填值；advance或skip时questionKey=${conversationSteps[view.step + 1]?.key ?? "review"}，clarify时questionKey=${step.key}。reply不提问，question只提一个主要问题。不要编造或猜测未提供的内容。` });
     }
@@ -141,7 +143,7 @@ function append(view: ConversationView, userMessage: string, assistantMessage: s
   return {
     turn: view.turn + 1, step: nextStep, status,
     draft: update ? { ...view.draft, ...update, depth: update.depth ? { version: 1, topics: { ...view.draft.depth.topics, ...update.depth.topics } } : view.draft.depth } : view.draft,
-    messages: [...view.messages, { role: "user" as const, content: userMessage }, { role: "assistant" as const, content: assistantMessage }].slice(-80),
+    messages: [...view.messages, { role: "user" as const, content: userMessage, topic: conversationSteps[view.step].key }, { role: "assistant" as const, content: assistantMessage }].slice(-80),
     question,
     totalSteps: conversationSteps.length,
     topic: conversationSteps[nextStep]?.key ?? "review", phase: status === "review" ? "review" : nextStep < 13 ? "basics" : "depth",

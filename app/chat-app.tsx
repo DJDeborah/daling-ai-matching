@@ -56,6 +56,7 @@ function DepthSummaries({ draft }: { draft: DraftProfile }) {
 export default function ChatApp({ username }: { username: string }) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [answer, setAnswer] = useState("");
+  const [pendingAnswer, setPendingAnswer] = useState("");
   const [report, setReport] = useState<Report | null>(null);
   const [aiAvailable, setAiAvailable] = useState(false);
   const [reportConsent, setReportConsent] = useState(false);
@@ -89,7 +90,7 @@ export default function ChatApp({ username }: { username: string }) {
   async function sendAnswer(event: FormEvent) {
     event.preventDefault();
     if (!conversation || conversation.status !== "collecting" || !answer.trim() || busy) return;
-    setBusy(true); setError(""); setNotice("");
+    setBusy(true); setPendingAnswer(answer.trim()); setError(""); setNotice("");
     try {
       const next = await apiJson<Conversation>("/api/conversation", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -97,7 +98,7 @@ export default function ChatApp({ username }: { username: string }) {
       });
       setConversation(next); setAnswer(""); setResumed(false);
     } catch (e) { setError(e instanceof Error ? e.message : "发送失败"); }
-    finally { setBusy(false); }
+    finally { setBusy(false); setPendingAnswer(""); }
   }
 
   async function saveProfile(event: FormEvent) {
@@ -158,7 +159,7 @@ export default function ChatApp({ username }: { username: string }) {
   return <MotionScope><div className="chat-shell">
     <header className="topbar chat-topbar"><Link className="brand" href="/"><span className="brand-mark">d.</span>妲灵<span className="brand-en">DALING</span></Link><span className="topbar-note">A LITTLE DEEPER, A LITTLE CLOSER.</span><nav className="chat-nav"><a href="/profile">我的资料</a><a href="/account">{username}</a></nav></header>
     <main className="chat-main">
-      <div className="chat-heading"><div><p className="section-kicker">DALING · AI MATCHING</p><h1>{conversation?.status === "complete" ? "找到相符的细节。" : conversation?.status === "review" ? "这是你的样子。" : conversation?.phase === "depth" ? "聊聊关系里的你。" : "了解你，从细节开始。"}</h1><p>{conversation?.status === "complete" ? "共同点、差异和还值得聊的问题，都有依据。" : "妲灵会沿着你的回答继续聊。不用准备标准答案。"}</p></div><div className="chat-heading-mark" aria-hidden="true">{conversation?.status === "complete" ? "03" : conversation?.phase === "depth" || conversation?.status === "review" ? "02" : "01"}</div></div>
+      <div className="chat-heading"><div><p className="section-kicker">DALING · AI MATCHING</p><h1>{conversation?.status === "complete" ? "找到相符的细节。" : conversation?.status === "review" ? "这是你的样子。" : conversation?.phase === "depth" ? "聊聊关系里的你。" : "了解你，从细节开始。"}</h1><p>{conversation?.status === "complete" ? "共同点、差异和还值得聊的问题，都有依据。" : "想怎么聊都可以，也可以直接提问。妲灵会回应你，再接着了解你。"}</p></div><div className="chat-heading-mark" aria-hidden="true">{conversation?.status === "complete" ? "03" : conversation?.phase === "depth" || conversation?.status === "review" ? "02" : "01"}</div></div>
       {error && <div className="error" role="alert">{error}</div>}
       {notice && <div className="notice" role="status">{notice}</div>}
       {loading && <section className="card chat-panel chat-loading">正在加载对话…</section>}
@@ -168,10 +169,10 @@ export default function ChatApp({ username }: { username: string }) {
           <div className="chat-panel-head"><div><span className="chat-live-dot"/>妲灵 · DALING AI</div><span>{conversation.status === "review" ? "资料核对" : `${conversation.phase === "depth" ? "深度相处" : "初步了解"} · ${Math.min(conversation.step + 1, conversation.totalSteps)} / ${conversation.totalSteps}`}</span></div>
           <div className="chat-thread" aria-live="polite">
             {conversation.messages.map((message, index) => <motion.div className={`chat-line ${message.role}`} key={`${index}-${message.role}`} initial={reduceMotion ? false : {opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{duration:.3}}><span className="chat-bubble">{message.content}</span></motion.div>)}
-            {busy && conversation.status === "collecting" && <div className="chat-line assistant"><span className="chat-bubble chat-thinking">妲灵正在回应…</span></div>}
+            {pendingAnswer && conversation.status === "collecting" && <><div className="chat-line user"><span className="chat-bubble">{pendingAnswer}</span></div><div className="chat-line assistant"><span className="chat-bubble chat-thinking">妲灵正在回应…</span></div></>}
             <div ref={bottomRef}/>
           </div>
-          {conversation.status === "collecting" ? <form className="chat-composer" onSubmit={sendAnswer}><label className="sr-only" htmlFor="chat-answer">你的回答</label><textarea id="chat-answer" value={answer} onChange={event => setAnswer(event.target.value)} placeholder="在这里回答，或输入“跳过”略过可选话题…" maxLength={conversation.inputLimit} rows={2} disabled={busy}/><div className="chat-composer-foot"><span>联系方式请在最后单独设置 · {answer.length}/{conversation.inputLimit}</span><button className="primary-btn" type="submit" disabled={busy || !answer.trim()}>{busy ? "稍候…" : "发送"}</button></div></form> : <div className="chat-composer"><span className="muted small">对话已完成。请在右侧核对资料和授权。</span></div>}
+          {conversation.status === "collecting" ? <form className="chat-composer" onSubmit={sendAnswer}><label className="sr-only" htmlFor="chat-answer">给妲灵的消息</label><textarea id="chat-answer" value={answer} onChange={event => setAnswer(event.target.value)} placeholder="说说你的想法，也可以直接问妲灵…" maxLength={conversation.inputLimit} rows={2} disabled={busy}/><div className="chat-composer-foot"><span>联系方式请在最后单独设置 · {answer.length}/{conversation.inputLimit}</span><button className="primary-btn" type="submit" disabled={busy || !answer.trim()}>{busy ? "稍候…" : "发送"}</button></div></form> : <div className="chat-composer"><span className="muted small">对话已完成。请在右侧核对资料和授权。</span></div>}
         </section>
         <aside className="chat-side">
           {conversation.status === "collecting" ? <div className="chat-side-card"><p className="section-kicker">YOUR JOURNEY</p><ol className="journey-list"><li className={conversation.phase === "basics" ? "current" : "done"}><span>01</span><div><strong>认识你</strong><p>生活、兴趣与基本偏好</p></div></li><li className={conversation.phase === "depth" ? "current" : ""}><span>02</span><div><strong>理解相处</strong><p>价值观、支持、节奏与边界</p></div></li><li><span>03</span><div><strong>寻找相符</strong><p>核对档案，阅读匹配报告</p></div></li></ol><div className="chat-progress-track"><span style={{width:Math.round(100*conversation.step/conversation.totalSteps)+"%"}}/></div><div className="depth-score-caption"><span>已经聊过的话题</span><strong>{conversation.step}/{conversation.totalSteps}</strong></div><ConnectionVisual compact/><p className="journey-note">可以慢慢聊，可选问题都能跳过。每一项理解，最后会先交给你核对。</p></div> : <div className="card chat-side-card review-card"><span className="status">保存前核对</span><h2>你刚才告诉我们的</h2>{d && <div className="review-summary"><p><strong>称呼</strong><span>{d.name}</span></p><p><strong>基本信息</strong><span>{genderText[d.gender]} · {d.age} 岁 · {d.city}</span></p><p><strong>想认识</strong><span>{genderText[d.seeking]} · {d.minAge}–{d.maxAge} 岁{d.preferredCity ? ` · ${d.preferredCity}` : ""}</span></p>{d.heightCm && <p><strong>身高</strong><span>{d.heightCm} cm</span></p>}{d.interests.length > 0 && <p><strong>兴趣</strong><span>{d.interests.join("、")}</span></p>}{d.about && <p><strong>自我介绍</strong><span>{d.about}</span></p>}{d.partnerNote && <p><strong>期待</strong><span>{d.partnerNote}</span></p>}</div>}
