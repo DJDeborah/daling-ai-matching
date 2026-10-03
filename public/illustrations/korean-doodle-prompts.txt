@@ -1,0 +1,22 @@
+Generation mode: built-in image_gen__imagegen, one original generation per asset, parallel batch.
+transparent_background: false
+
+Asset 1: korean-cafe-doodle.png
+Use case: illustration-story
+Asset type: standalone raster website login illustration.
+Primary request: an original Korean Instagram stationery cartoon doodle of two adorable generic animal friends sharing a quiet café moment: a small cream bunny with two long rounded upright ears and tiny burgundy dot eyes sits on the left, a small honey-cream bear with round ears and tiny burgundy dot eyes sits on the right. Both have simple rounded bodies, a tiny gentle smile, pale pink cheek marks, and hold small mugs while sitting at a very small round café table. A few small heart and star speech doodles float gently above them.
+Scene/backdrop: flat warm cream paper background #fff9f2, plenty of clean empty background.
+Style/medium: sparse hand-drawn Korean stationery cartoon, modest playful friendly character design, thin slightly wobbly burgundy and chocolate pencil outlines, a lightly imperfect handmade sketch feeling, simple flat soft color fills with extremely subtle pencil texture.
+Composition/framing: square canvas, centered complete illustration occupying the middle 55% of the canvas with large generous cream margins all around; every ear, chair leg, mug and doodle fully visible; designed to remain intact when cropped to a central 4:5 portrait.
+Color palette: warm cream #fff9f2 background; burgundy #8f1d2c and chocolate brown outlines; light pink #e7a2b0 table accent and cheeks; soft mint/sage #dce8de chair or mug accents. Limited restrained palette.
+Constraints: clean standalone original illustration, charming clear silhouettes, two characters only, no photography, no 3D, no UI or interface, absolutely no text, letters, lettering, logos, watermark, signatures, borders, collage, or mockup. No crowded details.
+
+Asset 2: korean-connect-doodle.png
+Use case: illustration-story
+Asset type: standalone raster website compact panel illustration.
+Primary request: an original Korean Instagram stationery cartoon doodle of two adorable generic animal friends connecting two large puzzle pieces together as a friendly partnership. A small cream bunny with two long rounded upright ears and tiny burgundy dot eyes stands on the left holding one light pink puzzle piece; a small honey-cream bear with round ears and tiny burgundy dot eyes stands on the right holding the matching soft mint/sage puzzle piece. Both have simple rounded bodies, a tiny gentle smile and pale pink cheek marks. The two puzzle pieces nearly join in the middle. Two or three small heart doodles float just above them.
+Scene/backdrop: flat warm cream paper background #fff9f2, plenty of clean empty background.
+Style/medium: sparse hand-drawn Korean stationery cartoon, modest playful friendly character design, thin slightly wobbly burgundy and chocolate pencil outlines, a lightly imperfect handmade sketch feeling, simple flat soft color fills with extremely subtle pencil texture.
+Composition/framing: square canvas, centered complete illustration occupying the middle 55% of the canvas with large generous cream margins on all sides; every ear, paw, foot, puzzle piece and heart fully visible; clear and legible when displayed as a small compact panel.
+Color palette: warm cream #fff9f2 background; burgundy #8f1d2c and chocolate brown outlines; light pink #e7a2b0 puzzle piece and cheeks; soft mint/sage #dce8de second puzzle piece. Limited restrained palette.
+Constraints: clean standalone original illustration, matching bunny and bear character design to the café description, two characters only, no photography, no 3D, no UI or interface, absolutely no text, letters, lettering, logos, watermark, signatures, borders, collage, or mockup. No crowded details.
