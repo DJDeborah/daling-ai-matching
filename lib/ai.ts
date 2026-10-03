@@ -1,6 +1,26 @@
 import { env } from "cloudflare:workers";
 
 export type AiMessage = { role: "system" | "user" | "assistant"; content: string };
+export type AiTextResponse = { content: string; model: string; providerResponseId: string; elapsedMs: number };
+
+export async function deepseekText(messages: AiMessage[], signal = AbortSignal.timeout(30000)): Promise<AiTextResponse> {
+  if (!env.DEEPSEEK_API_KEY) throw new Error("AI secret is unavailable");
+  const started = Date.now();
+  const response = await fetch("https://api.deepseek.com/chat/completions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "deepseek-flash", thinking: { type: "disabled" }, temperature: 0.75, max_tokens: 650, messages }),
+    signal,
+  });
+  if (!response.ok) throw new Error(`AI provider returned ${response.status}`);
+  const result = await response.json() as { id?: string; model?: string; choices?: { finish_reason?: string; message?: { content?: string } }[] };
+  const choice = result.choices?.[0];
+  if (choice?.finish_reason !== "stop") throw new Error("Incomplete AI response");
+  const content = choice.message?.content;
+  if (typeof content !== "string" || !content.trim()) throw new Error("Empty AI response");
+  if (typeof result.id !== "string" || !result.id || result.id.length > 200 || typeof result.model !== "string" || !result.model || result.model.length > 100) throw new Error("Invalid AI response metadata");
+  return { content, model: result.model, providerResponseId: result.id, elapsedMs: Date.now() - started };
+}
 
 export async function reserveAiCall(db: D1Database, userId: string, maxPerDay = 80): Promise<string | null> {
   const eventId = crypto.randomUUID();
@@ -31,7 +51,7 @@ export async function deepseekJson(messages: AiMessage[], maxTokens = 400, signa
       max_tokens: maxTokens,
       messages: attempt === 0 ? messages : [
         ...messages.slice(0, -1),
-        { role: "system", content: "上一生成没有返回可解析的完整JSON。本次严格遵守前面规定的字段与枚举，只输出一个完整JSON对象，以{开始、以}结束。不能只输出空格、普通聊天文本或格式说明；自然聊天内容必须放在规定的JSON字段里。" },
+        { role: "system", content: "上一生成没有返回可解析的完整JSON。本次严格遵守前面规定的字段与枚举，只输出一个完整JSON对象，以{开始、以}结束。不能只输出空格、普通聊天文本或格式说明；只使用前面规定的JSON字段。" },
         ...messages.slice(-1),
       ],
     }),

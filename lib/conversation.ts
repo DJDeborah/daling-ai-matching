@@ -1,12 +1,12 @@
 import { ownProfile } from "./database";
-import { deepseekJson, releaseAiCall, reserveAiCall } from "./ai";
+import { deepseekJson, deepseekText, releaseAiCall, reserveAiCall } from "./ai";
 import { blankProfile, containsContact, matchingDocument, profileSchema, rowToInput, type DraftProfile, type ProfileInput } from "./profile";
 import { z } from "zod";
-import { conversationSteps, parseValue, emptyValue, skipped, buildInterviewPrompt, currentTopicAnswers, type Step, type StepKey } from "./interview";
+import { conversationSteps, parseValue, emptyValue, skipped, buildInterviewPrompt, buildChatPrompt, currentTopicAnswers, type Step, type StepKey } from "./interview";
 import { parseDepth, depthKeys, type DepthKey } from "./depth";
 export { conversationSteps } from "./interview";
 
-export type ChatMessage = { role: "assistant" | "user"; content: string; topic?: StepKey };
+export type ChatMessage = { role: "assistant" | "user"; content: string; topic?: StepKey; ai?: { source: "ai"; model: string; providerResponseId: string; requestId: string; elapsedMs: number } };
 export type ConversationStatus = "collecting" | "review" | "complete";
 export type ConversationView = {
   turn: number;
@@ -36,7 +36,7 @@ type ConversationRow = {
 
 const reviewQuestion = "已经聊完啦。请核对下方资料，再决定是否保存、是否进入匹配池。联系方式只在双方心动且双方都授权时显示。";
 const completeMessage = "资料已保存。现在可以查看匹配报告；你也可以稍后独立编辑资料。";
-const aiOutput = z.object({ decision: z.enum(["advance", "clarify", "skip"]), value: z.unknown(), reply: z.string().trim().min(2).max(180), questionKey: z.string(), question: z.string().trim().min(4).max(220) });
+const aiOutput = z.object({ decision: z.enum(["advance", "clarify", "skip"]), value: z.unknown() }).strict();
 
 function initial(): ConversationView {
   return {
@@ -88,20 +88,23 @@ export async function loadConversation(db: D1Database, userId: string): Promise<
   return (await snapshot(db, userId)).view;
 }
 
-async function interpretAnswer(db: D1Database, userId: string, view: ConversationView, step: Step, message: string): Promise<{ update: Partial<DraftProfile> | null; reply: string; question: string }> {
+async function interpretAnswer(db: D1Database, userId: string, view: ConversationView, step: Step, message: string): Promise<{ update: Partial<DraftProfile> | null; assistant: ChatMessage }> {
   const isSkip = step.optional && skipped(message);
   const eventId = await reserveAiCall(db, userId);
   if (!eventId) throw new ConversationLimit("今天的 AI 对话次数已用完，请明天继续。你的进度已保存。");
   const messages = buildInterviewPrompt(view, message, isSkip);
-  const signal = AbortSignal.timeout(20000);
+  const signal = AbortSignal.timeout(30000);
+  const requestId = crypto.randomUUID();
+  let stage = "extract";
   try {
+    let update: Partial<DraftProfile> | null = null;
     for (let attempt = 0; attempt < 2; attempt++) {
     try {
-    const raw = await deepseekJson(messages, 950, signal);
+    const raw = await deepseekJson(messages, 750, signal);
     const result = aiOutput.safeParse(raw);
     if (!result.success) throw new Error("invalid interview response");
     const answer = result.data;
-    let update: Partial<DraftProfile> | null = null;
+    if (answer.decision !== "advance" && answer.value !== null) throw new Error("invalid interview response");
     if (isSkip || answer.decision === "skip") {
       if(!step.optional) throw new Error("cannot skip required topic");
       update = parseValue(step.key, emptyValue(step.key));
@@ -116,35 +119,52 @@ async function interpretAnswer(db: D1Database, userId: string, view: Conversatio
       update = parseValue(step.key, value);
       if (!update) throw new Error("invalid extracted value");
     }
-    const expectedKey = update ? (view.step + 1 < conversationSteps.length ? conversationSteps[view.step + 1].key : "review") : step.key;
-    if (answer.questionKey !== expectedKey || containsContact(answer.reply) || containsContact(answer.question) || (answer.question.match(/[?？]/g)?.length ?? 0) > 1) throw new Error("invalid interview question");
-    return { update, reply: answer.reply, question: expectedKey === "review" ? reviewQuestion : answer.question };
+    break;
     } catch (error) {
       const reason = error instanceof Error ? error.message : "invalid interview response";
-      const repairable = ["invalid interview response", "invalid extracted value", "invalid interview question", "cannot skip required topic", "Invalid AI JSON response"].includes(reason);
+      const repairable = ["invalid interview response", "invalid extracted value", "cannot skip required topic", "Invalid AI JSON response"].includes(reason);
       if (attempt === 1 || !repairable || signal.aborted) throw error;
-      messages.splice(messages.length - 1, 0, { role: "system", content: `上一次生成未通过服务器校验（${reason}）。请重新理解同一条用户回答并输出完整JSON。严格使用当前主题字段契约，不要跨主题填值；advance或skip时questionKey=${conversationSteps[view.step + 1]?.key ?? "review"}，clarify时questionKey=${step.key}。reply不提问，question只提一个主要问题。不要编造或猜测未提供的内容。` });
+      messages.splice(messages.length - 1, 0, { role: "system", content: `上一次生成未通过服务器校验（${reason}）。重新理解同一条用户回答，只输出decision、value两个字段的完整JSON。严格使用当前主题字段契约，不跨主题、不生成聊天、不猜测内容。clarify/skip的value必须null。` });
     }
     }
-    throw new Error("invalid interview response");
+    stage = "chat";
+    const chatMessages = buildChatPrompt(view, message, mergeDraft(view.draft, update), update !== null);
+    // The second call generates the entire visible reply. Neither an extraction
+    // acknowledgment nor a local question is added to the provider's text.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const response = await deepseekText(chatMessages, signal);
+      if (response.content.length > 800 || containsContact(response.content) || /^\s*(?:\{|```)/.test(response.content) || (response.content.match(/[?？]/g)?.length ?? 0) > 1) {
+        if (attempt === 1) throw new Error("invalid chat response");
+        chatMessages.splice(chatMessages.length - 1, 0, { role: "system", content: "请重新生成自然聊天原文：最多450字，不输出JSON、代码、联系方式或链接；只引导服务器指定主题，只问一个主要问题。" });
+        continue;
+      }
+      const { content, ...metadata } = response;
+      console.info("interview completed", JSON.stringify({ requestId, topic: step.key, target: conversationSteps[view.step + (update ? 1 : 0)]?.key ?? "review", providerResponseId: metadata.providerResponseId, model: metadata.model, elapsedMs: metadata.elapsedMs }));
+      return { update, assistant: { role: "assistant", content, ai: { source: "ai", requestId, ...metadata } } };
+    }
+    throw new Error("invalid chat response");
   } catch (error) {
     await releaseAiCall(db, eventId);
     const reason = error instanceof Error ? error.message : "unknown";
     const safeReason = /^(invalid |Invalid AI |Incomplete AI |Empty AI |AI provider returned \d{3}|cannot skip required topic)/.test(reason) ? reason : error instanceof Error ? error.name : "unknown";
-    console.error("interview failed", safeReason);
+    console.error("interview failed", JSON.stringify({ requestId, stage, reason: safeReason }));
     // Never guess deep preferences or silently replace the oriented dialogue with a form.
     throw new ConversationAiUnavailable("妲灵暂时没能完成这次回应。你的回答还在输入框里，请稍后重试。");
   }
 }
 
-function append(view: ConversationView, userMessage: string, assistantMessage: string, question: string, update: Partial<DraftProfile> | null): ConversationView {
+function mergeDraft(draft: DraftProfile, update: Partial<DraftProfile> | null): DraftProfile {
+  return update ? { ...draft, ...update, depth: update.depth ? { version: 1, topics: { ...draft.depth.topics, ...update.depth.topics } } : draft.depth } : draft;
+}
+
+function append(view: ConversationView, userMessage: string, assistant: ChatMessage, update: Partial<DraftProfile> | null): ConversationView {
   const nextStep = update ? view.step + 1 : view.step;
   const status: ConversationStatus = nextStep >= conversationSteps.length ? "review" : "collecting";
   return {
     turn: view.turn + 1, step: nextStep, status,
-    draft: update ? { ...view.draft, ...update, depth: update.depth ? { version: 1, topics: { ...view.draft.depth.topics, ...update.depth.topics } } : view.draft.depth } : view.draft,
-    messages: [...view.messages, { role: "user" as const, content: userMessage, topic: conversationSteps[view.step].key }, { role: "assistant" as const, content: assistantMessage }].slice(-80),
-    question,
+    draft: mergeDraft(view.draft, update),
+    messages: [...view.messages, { role: "user" as const, content: userMessage, topic: conversationSteps[view.step].key }, assistant].slice(-80),
+    question: assistant.content,
     totalSteps: conversationSteps.length,
     topic: conversationSteps[nextStep]?.key ?? "review", phase: status === "review" ? "review" : nextStep < 13 ? "basics" : "depth",
     revision: revision(), inputLimit: conversationSteps[nextStep]?.key === "about" ? 400 : conversationSteps[nextStep]?.key === "partnerNote" ? 240 : 700,
@@ -162,8 +182,8 @@ export async function answerConversation(db: D1Database, userId: string, expecte
   if (message.length > view.inputLimit) throw new ConversationValidation(`这一项最多 ${view.inputLimit} 字，可以保留最重要的部分。`);
   if (view.turn >= 100) throw new ConversationLimit("这轮对话过长，请重置后重新开始");
   const step = conversationSteps[view.step];
-  const { update, reply, question } = await interpretAnswer(db, userId, view, step, message);
-  const response = append(view, message, `${reply}\n\n${question}`, question, update);
+  const { update, assistant } = await interpretAnswer(db, userId, view, step, message);
+  const response = append(view, message, assistant, update);
   const write = await db.prepare(`UPDATE conversations SET turn = ?, step = ?, status = ?, draft_json = ?, messages_json = ?, updated_at = ?, protocol_version = 2, question_text = ?
     WHERE user_id = ? AND turn = ? AND status = 'collecting' AND updated_at = ?`)
     .bind(response.turn, response.step, response.status, JSON.stringify(response.draft), JSON.stringify(response.messages), response.revision, response.question, userId, expectedTurn, row.updated_at).run();

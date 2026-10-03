@@ -7,13 +7,14 @@ import type { MatchReport, ReportCandidate } from "@/lib/report";
 import { depthKeys, depthLabels } from "@/lib/depth";
 import { MotionScope, Reveal, ConnectionVisual } from "./design-motion";
 import { motion, useReducedMotion } from "motion/react";
+import type { ChatMessage } from "@/lib/conversation";
 
 type Conversation = {
   turn: number;
   step: number;
   status: "collecting" | "review" | "complete";
   draft: DraftProfile;
-  messages: { role: "assistant" | "user"; content: string }[];
+  messages: ChatMessage[];
   question: string;
   totalSteps: number;
   topic: string;
@@ -168,7 +169,7 @@ export default function ChatApp({ username }: { username: string }) {
         <section className="card chat-panel" aria-label="匹配对话">
           <div className="chat-panel-head"><div><span className="chat-live-dot"/>妲灵 · DALING AI</div><span>{conversation.status === "review" ? "资料核对" : `${conversation.phase === "depth" ? "深度相处" : "初步了解"} · ${Math.min(conversation.step + 1, conversation.totalSteps)} / ${conversation.totalSteps}`}</span></div>
           <div className="chat-thread" aria-live="polite">
-            {conversation.messages.map((message, index) => <motion.div className={`chat-line ${message.role}`} key={`${index}-${message.role}`} initial={reduceMotion ? false : {opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{duration:.3}}><span className="chat-bubble">{message.content}</span></motion.div>)}
+            {conversation.messages.map((message, index) => <motion.div className={`chat-line ${message.role}`} key={`${index}-${message.role}`} initial={reduceMotion ? false : {opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{duration:.3}}><div className="chat-bubble"><div>{message.content}</div>{message.role === "assistant" && message.ai?.source === "ai" && <details className="chat-ai-receipt"><summary>AI 回复</summary><div>模型：{message.ai.model}</div><div>响应编号：<code>{message.ai.providerResponseId}</code></div><div>生成用时：{(message.ai.elapsedMs / 1000).toFixed(1)} 秒</div></details>}</div></motion.div>)}
             {pendingAnswer && conversation.status === "collecting" && <><div className="chat-line user"><span className="chat-bubble">{pendingAnswer}</span></div><div className="chat-line assistant"><span className="chat-bubble chat-thinking">妲灵正在回应…</span></div></>}
             <div ref={bottomRef}/>
           </div>
