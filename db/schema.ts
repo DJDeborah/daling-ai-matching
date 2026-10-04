@@ -91,3 +91,37 @@ export const draftMatchReports = sqliteTable("draft_match_reports", {
   reportJson: text("report_json").notNull(),
   createdAt: text("created_at").notNull(),
 });
+
+export const wechatBindings = sqliteTable("wechat_bindings", {
+  identityHash: text("identity_hash").primaryKey(),
+  bindingId: text("binding_id").notNull().unique(),
+  userId: text("user_id").notNull().unique().references(() => users.userId, { onDelete: "cascade" }),
+  createdAt: text("created_at").notNull(),
+});
+
+export const wechatBindingCodes = sqliteTable("wechat_binding_codes", {
+  userId: text("user_id").primaryKey().references(() => users.userId, { onDelete: "cascade" }),
+  codeHash: text("code_hash").notNull().unique(),
+  expiresAt: text("expires_at").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+export const wechatEvents = sqliteTable("wechat_events", {
+  eventHash: text("event_hash").primaryKey(),
+  identityHash: text("identity_hash").notNull(),
+  userId: text("user_id").references(() => users.userId, { onDelete: "cascade" }),
+  bindingId: text("binding_id"),
+  payloadHash: text("payload_hash").notNull(),
+  state: text("state").notNull(),
+  reply: text("reply"),
+  startedRevision: text("started_revision"),
+  startedTurn: integer("started_turn"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+}, table => [index("wechat_events_created_idx").on(table.createdAt), index("wechat_events_user_idx").on(table.userId)]);
+
+export const wechatLocks = sqliteTable("wechat_locks", {
+  userId: text("user_id").primaryKey().references(() => users.userId, { onDelete: "cascade" }),
+  owner: text("owner").notNull(),
+  expiresAt: text("expires_at").notNull(),
+});

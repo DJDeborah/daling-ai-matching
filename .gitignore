@@ -47,3 +47,10 @@ next-env.d.ts
 /.codex/
 /outputs/
 /work/
+
+# Runtime queues and local credentials for the independent WeChat relay.
+/integrations/wechat/data/
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm

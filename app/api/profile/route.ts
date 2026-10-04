@@ -73,8 +73,10 @@ export async function DELETE(request: Request) {
   try {
     const db = database();
     const current = await ownProfile(db, user.userId);
+    const cancelWechat = db.prepare("UPDATE wechat_events SET state = 'done', reply = '资料已删除，请发送进度重新开始。', started_revision = NULL, started_turn = NULL WHERE user_id = ?").bind(user.userId);
     if (current) {
       await db.batch([
+        cancelWechat,
         db.prepare("DELETE FROM likes WHERE from_profile_id = ? OR to_profile_id = ?").bind(current.profile_id, current.profile_id),
         db.prepare("DELETE FROM blocks WHERE from_profile_id = ? OR to_profile_id = ?").bind(current.profile_id, current.profile_id),
         db.prepare("DELETE FROM like_events WHERE from_profile_id = ?").bind(current.profile_id),
@@ -85,6 +87,7 @@ export async function DELETE(request: Request) {
       ]);
     } else {
       await db.batch([
+        cancelWechat,
         db.prepare("DELETE FROM conversations WHERE user_id = ?").bind(user.userId),
         db.prepare("DELETE FROM match_reports WHERE user_id = ?").bind(user.userId),
         db.prepare("DELETE FROM draft_match_reports WHERE user_id = ?").bind(user.userId),

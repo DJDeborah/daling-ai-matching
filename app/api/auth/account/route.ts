@@ -32,6 +32,10 @@ export async function DELETE(request: Request) {
     ] : [];
     await db.batch([
       ...statements,
+      db.prepare("UPDATE wechat_events SET state = 'done', reply = '账号已删除，请创建账号后发送新消息。', user_id = NULL, started_revision = NULL, started_turn = NULL WHERE user_id = ?").bind(user.userId),
+      db.prepare("DELETE FROM wechat_locks WHERE user_id = ?").bind(user.userId),
+      db.prepare("DELETE FROM wechat_binding_codes WHERE user_id = ?").bind(user.userId),
+      db.prepare("DELETE FROM wechat_bindings WHERE user_id = ?").bind(user.userId),
       db.prepare("DELETE FROM conversations WHERE user_id = ?").bind(user.userId),
       db.prepare("DELETE FROM match_reports WHERE user_id = ?").bind(user.userId),
       db.prepare("DELETE FROM draft_match_reports WHERE user_id = ?").bind(user.userId),

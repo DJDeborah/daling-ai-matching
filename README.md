@@ -4,7 +4,9 @@
 
 **[打开网页版](https://daling-ai-matching-smile.harebod.chatgpt.site/)** · [技术分析](TECHNICAL_ANALYSIS.md) · [商业化与留存诊断](docs/PRODUCT_AND_RETENTION.md)
 
-**[下载精简交付包 · 约 8 MB](https://github.com/DJDeborah/daling-ai-matching/releases/tag/mini-2026-10-04)**：一个文件夹包含代码、README、五张截图、网页链接与文件校验清单，不含依赖、缓存、用户数据库或 API key。
+**[微信客服接入与后台配置](docs/WECHAT_SETUP.md)**：接入层已实现，真实微信入口需企业微信授权应用、客服账号及固定出口服务器配置。公开网站默认关闭微信入口，配置完成后再开启。
+
+**[下载网页精简包 · 约 8 MB](https://github.com/DJDeborah/daling-ai-matching/releases/tag/mini-2026-10-04)**：一个文件夹包含网页代码、README、五张截图、网页链接与文件校验清单，不含依赖、缓存、用户数据库或 API key。该发布包是微信扩展前的网页快照；最新微信扩展见本仓库源码。
 
 <p align="center"><img src="docs/screenshots/login-desktop.png" width="960" alt="妲灵注册页：月夜咖啡馆的完整艺术插画与站内账号表单"></p>
 
@@ -20,6 +22,7 @@
 - **匹配理由与差距**：先双向筛选基本条件，再比较已知相处维度。实验池没有完全符合的候选时，仍给一位相对最接近的参考，并列出条件差距和未知项。
 - **AI 相处分析**：报告先展示确定性的依据；再次授权后生成 AI 解读与候选建议。失败保留原报告，成功内容可恢复。
 - **真实匹配互动**：自愿加入真实池后，可以心动、撤回和屏蔽；双方心动且都授权分享时才显示联系方式。
+- **微信客服适配**：一次性绑定现有账号后，在微信接着聊、提前匹配、确认 AI 分析；共享网站问答与报告服务。部署说明和独立接入服务器代码见上方链接。
 
 ## 使用顺序
 

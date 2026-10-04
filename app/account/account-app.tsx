@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MotionScope, Reveal } from "../design-motion";
+import WechatBinding from "./wechat-binding";
 
 type AuthMode = "register" | "login";
 
@@ -89,6 +90,7 @@ export default function AccountApp({ username }: { username: string | null }) {
           <button className="primary-btn" type="submit" disabled={busy}>{busy ? "请稍候…" : mode === "register" ? "创建账号" : "登录"}</button>
         </form>
       </div> : <div className="account-sections">
+        <WechatBinding />
         <section className="card account-card"><h2>账号操作</h2><p className="muted small">你可以在这里退出登录。对话从首页继续，交友资料可在「我的资料与真实匹配」编辑或删除。</p><div className="candidate-actions"><a className="primary-btn" href="/">返回对话与报告</a><a className="secondary-btn" href="/profile">管理交友资料</a><button className="secondary-btn" type="button" onClick={() => void logout()} disabled={busy}>退出登录</button></div></section>
         <section className="card account-card"><h2>修改密码</h2><form onSubmit={changePassword}><div className="field"><label htmlFor="current-password">当前密码</label><input id="current-password" type="password" autoComplete="current-password" required value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} /></div><div className="field"><label htmlFor="new-password">新密码</label><input id="new-password" type="password" autoComplete="new-password" required maxLength={128} value={newPassword} onChange={e => setNewPassword(e.target.value)} /></div><button className="secondary-btn" type="submit" disabled={busy}>修改密码</button></form></section>
         <section className="card account-card"><h2>永久删除账号</h2><p className="muted small">账号、对话、报告、资料、心动、屏蔽记录和登录会话都会删除，无法恢复。请输入密码确认。</p><form onSubmit={deleteAccount}><div className="field"><label htmlFor="delete-password">当前密码</label><input id="delete-password" type="password" autoComplete="current-password" required value={deletePassword} onChange={e => setDeletePassword(e.target.value)} /></div><button className="secondary-btn danger-btn" type="submit" disabled={busy}>永久删除账号与资料</button></form></section>
