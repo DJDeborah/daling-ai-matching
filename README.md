@@ -4,6 +4,8 @@
 
 **[打开网页版](https://daling-ai-matching-smile.harebod.chatgpt.site/)** · [技术分析](TECHNICAL_ANALYSIS.md) · [商业化与留存诊断](docs/PRODUCT_AND_RETENTION.md)
 
+**[下载精简交付包 · 约 8 MB](https://github.com/DJDeborah/daling-ai-matching/releases/tag/mini-2026-10-04)**：一个文件夹包含代码、README、五张截图、网页链接与文件校验清单，不含依赖、缓存、用户数据库或 API key。
+
 <p align="center"><img src="docs/screenshots/login-desktop.png" width="960" alt="妲灵注册页：月夜咖啡馆的完整艺术插画与站内账号表单"></p>
 
 > 当前是可使用的公开测试版。报告中的 96 份实验档案用于演示，不对应真实报名者；真实报名者在独立匹配池中展示。项目不宣称评分能够预测现实关系成功率。
