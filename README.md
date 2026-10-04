@@ -1,57 +1,173 @@
-# 妲灵双向交友匹配
+# 妲灵 · Daling AI Matching
 
-公开网页测试版，复刻原命令行脚本的逐题交谈体验，并补上账号、资料持久化、双向匹配和报告。详细的原型审计、实现边界、任务拆解与 Agent 能力对比见 [技术分析](./TECHNICAL_ANALYSIS.md)。
+用有顺序的自然对话，了解生活习惯与相处期待，生成可解释的双向匹配报告。
 
-## 使用流程
+**[打开网页版](https://daling-ai-matching-smile.harebod.chatgpt.site/)** · [技术分析](TECHNICAL_ANALYSIS.md) · [商业化与留存诊断](docs/PRODUCT_AND_RETENTION.md)
 
-1. 访问首页，先用站内用户名和密码注册或登录。账号与 ChatGPT 无关；注册需确认年满 18 岁。密码只需非空，无最短长度要求；注册、登录和修改密码采用同一长度规则（最多 128 个字符、UTF-8 最多 256 字节）。
-2. 与妲灵进行有顺序的自然对话，共 19 个话题：13 个基础话题和 6 个深度主题。深度部分涵盖关系价值观、分歧修复、情感支持、生活节奏、未来方向与相处边界。每轮先调用 DeepSeek 整理当前主题信息，只输出 `decision` 和 `value`；服务器校验资料并确定继续当前主题或下一主题。随后独立调用 DeepSeek，发送本人已确认资料、最近对话、最新回答和本轮信息目标，让 AI 生成完整自然聊天原文。网页直接显示这一原文，不拼接本地确认话术或固定下一题。可选主题允许跳过。
-3. 对话记录、进度和草稿保存在 D1，刷新可继续。结束后核对基础与深度档案，确认成年人身份与资料用途；是否进入真实池、是否分享联系方式分别选择。保存版本化完整匹配 JSON，可下载本人档案。原回答与完整 JSON 仅供本人读取；其他候选人只看到公开基础资料、比较依据和讨论建议。已完成基础资料的用户可补充深度主题；基础编辑不会清除深度档案。
-4. 保存后自动生成规则匹配报告：展示 18 份**虚构样例**中的合格数量、前几名及理由，另列真实报名者。虚构样例不能心动或联系，真实池为空时如实显示。用户再次勾选授权后，可让 AI 为样例结果生成文字解读；AI 不改动匹配资格和排序。
+<p align="center"><img src="docs/screenshots/login-desktop.png" width="960" alt="妲灵注册页：月夜咖啡馆的完整艺术插画与站内账号表单"></p>
 
-## 技术结构
+> 当前是可使用的公开测试版。报告中的 96 份实验档案用于演示，不对应真实报名者；真实报名者在独立匹配池中展示。项目不宣称评分能够预测现实关系成功率。
 
-重新登录会恢复本人保存的对话，而不是重新生成历史消息。首页顶部会说明正在续聊，并提供「开启新对话」入口；已完成档案时提供「继续深度对话」。新的回答始终经过服务端 DeepSeek API，旧记录只是上下文。开启新对话需要确认清除当前对话；已保存交友资料仍可单独管理。
+## 你可以做什么
 
-聊天会先回答用户的疑问和承接闲聊，再按既定主题继续收集信息。回答里同时有反问时也会先回应。发送后立即显示本人消息，等待时显示妲灵正在回应；失败时保留输入。新 AI 回复保存并展示提供商实际返回的响应编号、模型和生成用时；开场白、保存提示和旧记录不会补造 AI 回执。每条新用户消息带当前主题标签，同一深度主题的多轮消息会一起存入本人档案的原回答；已完成主题再次发送给模型时只带摘要和结构化字段，不重复发送整段原回答。
+- **独立账号**：用户名与密码注册、登录，用户不需要 ChatGPT 账号。非空密码可用，最多 128 字符且 UTF-8 不超过 256 字节；注册需确认已满 18 岁。
+- **10 题场景访谈**：每次用户回答都在服务端调用 AI，既回应用户，也按预定顺序继续。可展开回答例子，可跳过可选题。
+- **随时停止**：点击「聊累了，先看匹配」得到当前资料的预览，之后可以继续。前三题必要资料齐全后，可核对授权并提前保存。
+- **进度持久化**：账号内保存聊天、草稿和进度，刷新继续；「从头开始 · 10 个问题」开启新访谈。旧版 19 题对话仍可续聊。
+- **完整 JSON 档案**：基础信息、明确偏好和六个深度主题保存成结构化档案；支持本人导出。
+- **匹配理由与差距**：先双向筛选基本条件，再比较已知相处维度。实验池没有完全符合的候选时，仍给一位相对最接近的参考，并列出条件差距和未知项。
+- **AI 相处分析**：报告先展示确定性的依据；再次授权后生成 AI 解读与候选建议。失败保留原报告，成功内容可恢复。
+- **真实匹配互动**：自愿加入真实池后，可以心动、撤回和屏蔽；双方心动且都授权分享时才显示联系方式。
+
+## 使用顺序
+
+**注册登录 → 聊聊你 → 匹配结果 → 相处分析**
+
+1. 打开网页版，创建站内账号。
+2. 开始访谈；想休息时提前看匹配，想重新回答时从头开始。
+3. 核对自己的档案；保存用途、加入真实池、分享联系方式分别授权。
+4. 阅读首位候选的理由、差距和待确认问题；需要时点击「开始 AI 分析」。
+5. 到「我的资料与真实匹配」管理真实互动与公开范围。
+
+## 页面截图
+
+截图来自实际运行页面中的独立测试账号，不包含真实用户档案或联系方式。报告截图刻意设置较窄年龄范围，展示没有完全符合候选时的真实页面行为；画面中的候选来自实验档案。
+
+### 对话在中间，每题都有具体例子
+
+<img src="docs/screenshots/chat-desktop.png" width="960" alt="10题访谈：居中对话、进度、回答例子与提前匹配按钮">
+
+### 首位参考对象、实际条件差距与 AI 分析
+
+<img src="docs/screenshots/report-desktop.png" width="960" alt="匹配报告：相对最接近的候选、条件差距、AI相处建议">
+
+<details>
+<summary>查看手机端：完整插画与匹配报告</summary>
+<p><img src="docs/screenshots/login-mobile.png" width="320" alt="手机注册页完整插画"> <img src="docs/screenshots/report-mobile.png" width="320" alt="手机匹配报告"></p>
+</details>
+
+## 新访谈的 10 个主题
+
+| 顺序 | 主题 | 场景或信息 |
+| --- | --- | --- |
+| 1 | 认识你 | 昵称、性别、年龄 |
+| 2 | 城市与距离 | 住在哪座城市？只能周末见面的异地能否接受？ |
+| 3 | 认识对象 | 朋友介绍一个人时，希望的性别和年龄范围 |
+| 4 | 闲暇习惯 | 周六下午突然空下来，手机只剩 8% 电，最想做什么？ |
+| 5 | 关系价值观 | 旧书店里发现一封陌生人的信，两个人想法不同，怎样被对待才舒服？ |
+| 6 | 分歧与修复 | 期待的周末计划临时取消，接下来半小时怎么处理？ |
+| 7 | 情感支持 | 深夜最后一班地铁停运，疲惫时希望对方怎么支持？ |
+| 8 | 生活节奏 | 两天周末都空着，对方想一起待着，你也想做自己的事 |
+| 9 | 未来方向 | 对方可能搬去另一座城市，哪些坚持、哪些能商量？ |
+| 10 | 相处边界 | 刚交往，对方想看手机、一起买昂贵物品，怎样表达界限？ |
+
+这是 10 个有序主题；资料不足或用户反问时，AI 可以在当前主题澄清，不会强行跳题。题目和示例仅作引导，不作为用户已表达的事实。
+
+## 技术架构
+
+```mermaid
+flowchart LR
+  A[注册或登录] --> B[10题场景对话]
+  B --> C[AI提取当前主题]
+  C --> D[服务端校验与顺序控制]
+  D --> E[AI生成自然回复]
+  E --> F[(D1 聊天与草稿)]
+  F --> B
+  F --> G[暂停预览或核对保存]
+  G --> H[双向条件与深度比较]
+  H --> I[候选 理由 差距]
+  I --> J[可选授权AI分析]
+```
 
 | 部分 | 实现 |
 | --- | --- |
-| 网页 | React、Next.js 兼容的 Vinext、Cloudflare Workers；手机和桌面响应式布局 |
-| 账号 | 站内用户名和密码；独立随机盐值与分段 PBKDF2-SHA256 密码哈希；仅保存会话令牌摘要，浏览器使用 HttpOnly Cookie |
-| 数据 | Cloudflare D1 中的账号、会话、资料、对话、心动、屏蔽、限流和 AI 解读缓存；虚构样例仅在 [`lib/demo-profiles.ts`](./lib/demo-profiles.ts) 代码中 |
-| 对话 | [`lib/interview.ts`](./lib/interview.ts) 定义主题、每轮提示词和字段契约；[`lib/conversation.ts`](./lib/conversation.ts) 持久化服务端状态。AI 根据上下文生成回应与问题措辞，服务器控制推进和授权 |
-| 匹配 | [`lib/matching.ts`](./lib/matching.ts) 双向筛选性别、年龄、城市及身高；[`lib/compatibility.ts`](./lib/compatibility.ts) 比较六个深度维度，输出相符度、覆盖度与讨论建议；[`lib/report.ts`](./lib/report.ts) 构建报告 |
-| 互动 | 仅真实报名者可心动或屏蔽；双方都心动且都授权分享时，才显示彼此填写的联系方式 |
-| 设计 | 自主编写的留白、大字、蓝色视觉与轨道动画；Motion 实现消息和卡片入场，CSS 实现轨道与交互过渡；适配手机及减少动画偏好 |
+| 前端 | React 19、Next.js 兼容的 Vinext、TypeScript、Tailwind、Motion |
+| 后端 | Cloudflare Workers API 路由 |
+| 数据库 | Cloudflare D1；Drizzle schema 与 6 份 SQL 迁移 |
+| AI | 服务端 DeepSeek Chat Completions；当前代码使用 `deepseek-flash` |
+| 账号 | 随机盐与分段 PBKDF2-SHA256；HttpOnly 会话；数据库保存令牌摘要 |
+| 对话 | 每轮独立的信息提取调用与自然回复调用，服务端决定推进 |
+| 匹配 | 双向基本条件过滤、六维深度比较、资料覆盖度、可解释差距 |
+| 设计 | 奶油、酒红与植物色；完整场景插画；响应式布局与减少动画支持 |
 
-对话需要服务端 AI。信息提取和聊天生成都成功后才保存本轮；请求失败、JSON 无效或返回内容不合规时不会写入或推进，输入框保留回答供重试。JSON 模式返回空白或无效格式时最多修复一次，字段校验失败可再修正一次；自然聊天内容校验失败可再生成一次。两阶段和所有修正共享 30 秒预算，每轮占一次逻辑对话额度，失败释放额度。已保存档案仍可生成确定性匹配报告；AI 文字解读失败时保留规则报告。联系方式和授权字段不进入访谈模型上下文。DeepSeek 密钥只以服务端 `DEEPSEEK_API_KEY` secret 保存，不写入仓库或浏览器包。
-
-深度维度权重为价值观 25、分歧修复 15、支持 20、节奏 15、未来 15、边界 10。只比较明确填写的字段，未知不扣分；报告同时展示可比较资料的覆盖度。整体相符度按覆盖度给予深度分最多 70% 权重，是产品规则分数，不是关系成功率。18 份演示资料含六种虚构的相处画像。
-
-## 设计参考与许可
-
-独立动画网站参考：[Codrops OnScrollTypographyAnimations](https://tympanus.net/Development/OnScrollTypographyAnimations/)（[MIT 源码](https://github.com/codrops/OnScrollTypographyAnimations)）；开源组件参考：[Magic UI](https://github.com/magicuidesign/magicui)（MIT）。实际动画依赖 [Motion](https://github.com/motiondivision/motion/blob/main/LICENSE.md)（MIT），视觉和轨道图形由本项目自行实现。Eloqwnt 作为视觉方向参考，未发现可复用的开源许可，因此未复制其源码或素材。
+**匹配边界：**“相对最接近”的放宽仅用于实验档案展示。真实池仍检查参与授权、公开状态、屏蔽及双向条件。AI 不决定资格、排序或联系方式权限。六维分数是产品比较规则，不是心理测评结论。
 
 ## 本地运行
 
-要求 Node.js 22.13+。首次创建本地 D1 时，在项目根目录执行：
+要求 **Node.js 22.13+** 和 npm。Windows、macOS、Linux 的新克隆默认采用可移植运行方式，无需 Codex。
 
 ```sh
+git clone https://github.com/DJDeborah/daling-ai-matching.git
+cd daling-ai-matching
 npm ci
 npm run build
-node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_keen_mysterio.sql
-node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0001_smart_yellowjacket.sql
-node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0002_warm_blue_blade.sql
-node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0003_pink_colossus.sql
-node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0004_eminent_ken_ellis.sql
+npm run db:migrate
+```
+
+把 [`.env.example`](.env.example) 复制为项目根目录的 `.env.local`，填写自己的 **服务端** DeepSeek key：
+
+```dotenv
+DEEPSEEK_API_KEY=replace_with_your_deepseek_key
+```
+
+```sh
 npm run dev
 ```
 
-已有数据库只执行尚未应用的迁移。若本地未配置服务端 `DEEPSEEK_API_KEY`，采访会提示 AI 暂不可用并保留输入与进度；已有档案仍可读取规则报告。不要提交密钥。原脚本中暴露过的凭据应在对应服务商后台撤销。
+访问 **http://127.0.0.1:5173**。本地数据库位于 `.wrangler/state`；`db:migrate` 只操作本地 D1，并通过迁移记录避免重复应用。它要求先构建生成 Worker 配置。
 
-## 验证与上线
+`db:migrate` 面向新库或已有迁移登记的库。旧版逐条手工执行 SQL 建立的本地库需先整理迁移登记，不能直接重复应用建表迁移。
 
-覆盖：匿名入口与独立账号；19 主题顺序、离题追问、自然跳过、上下文回应、刷新续聊；AI 失败保留输入且不推进；核对授权；JSON 保存与本人导出；六维比较和缺失字段；虚构与真实池隔离；双向联系方式授权；基础编辑保留深度档案；多标签页及延迟请求冲突；报告缓存版本；减少动画偏好；构建及全部 D1 迁移。线上验证结果按实际执行记录，不能以构建成功代替线上模型验证。
+未设置 key 时仍可注册、浏览界面和阅读已有档案的规则报告；AI 访谈会明确失败并保留输入与进度，不伪造回复。
 
-当前仍是公开测试版：没有身份核验、密码找回、照片上传、站内私信和人工举报处理，用户资料来自自述。真实候选池目前最多读取最近 1000 份公开资料后在服务端筛选；扩大推广前要补数据库预筛选、分页、滥用处置与运营渠道。
+### 本地运行构建产物
+
+```sh
+npm run build
+npm run start -- --env-file ../../.env.local
+```
+
+这里的环境文件路径由 `dist/server/wrangler.json` 所在目录解析，指向根目录 `.env.local`；访问地址以 Wrangler 输出为准。
+
+### 生产部署
+
+现有网页版由 **Sites + Cloudflare Worker/D1** 托管。GitHub 保存可运行源码、迁移、截图与设计资源；用户数据和生产数据库不在仓库中。
+
+自行部署时，需要配置实际 Worker、D1 数据库、全部迁移与服务端 `DEEPSEEK_API_KEY` secret。本仓库的 `.openai/hosting.json` 对应现有 Site，生成的本地 D1 ID 是占位符。GitHub Pages 的静态托管无法直接运行本项目的登录、数据库及 AI API。
+
+## 主要目录
+
+```text
+app/                 页面与 API 路由
+components/          交互与 UI 组件
+lib/                 账号、访谈、资料、比较与报告逻辑
+db/                  Drizzle 数据模型
+drizzle/             全部 SQL 迁移与元数据
+public/illustrations 场景插画与生成提示词
+scripts/             本地启动、构建、数据库迁移
+build/               Worker 与 Sites 的构建适配
+docs/                截图、商业化与留存分析
+```
+
+重点源码：[访谈定义](lib/interview.ts) · [对话状态](lib/conversation.ts) · [实验档案](lib/demo-profiles.ts) · [双向筛选](lib/matching.ts) · [六维比较](lib/compatibility.ts) · [报告](lib/report.ts) · [AI 解读](lib/report-ai.ts)。
+
+## 校验与已验证行为
+
+```sh
+npx tsc --noEmit --incremental false
+npm run build
+```
+
+当前版本已执行真实线上 AI 对话和按钮验证：10 个主题顺序、每轮 AI 回执、暂停恢复、完整 JSON、提前保存、报告缓存、零严格候选时给相对参考、桌面和手机布局。开发期间的临时验证账号与运行工具不提交；这些记录不等于持续集成或商业留存数据。
+
+## 当前限制与产品方向
+
+目前没有照片／身份核验、密码找回、站内私信、完整举报处理、会面反馈、推荐通知或收费闭环。原始对话及深度 JSON 仅供本人读取；联系方式不发送给模型。
+
+“完成问卷、阅读实验报告”已可以使用；商业化还需要验证真实供给、双方回应与后续相处价值。具体诊断、需要记录的漏斗和 14 天试验方案见 [商业化与留存诊断](docs/PRODUCT_AND_RETENTION.md)。
+
+## 设计素材与第三方归属
+
+当前两幅艺术场景插画通过内置图像生成制作，作品与 [提示词](public/illustrations/korean-editorial-prompts.txt) 均在仓库中。早期插画保留用于项目历史。
+
+依赖与构建模板保留各自许可：[Sites 构建适配的 MIT 许可](build/sites-vite-plugin.LICENSE)、[Shadcn 样式许可](vendor/shadcn-tailwind-4.13.0.LICENSE.md)。其他第三方包许可以对应上游为准。项目未复制参考网站的源码或未授权素材。
